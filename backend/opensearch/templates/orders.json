@@ -1,0 +1,44 @@
+{
+  "index_patterns": [
+    "loco_orders_v*"
+  ],
+  "priority": 100,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 1,
+      "refresh_interval": "1s"
+    },
+    "mappings": {
+      "properties": {
+        "tenant_code": {
+          "type": "keyword"
+        },
+        "order_id": {
+          "type": "keyword"
+        },
+        "status": {
+          "type": "keyword"
+        },
+        "service_id": {
+          "type": "keyword"
+        },
+        "customer_id": {
+          "type": "keyword"
+        },
+        "provider_id": {
+          "type": "keyword"
+        },
+        "origin": {
+          "type": "geo_point"
+        },
+        "created_at": {
+          "type": "date"
+        },
+        "updated_at": {
+          "type": "date"
+        }
+      }
+    }
+  }
+}

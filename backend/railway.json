@@ -1,0 +1,18 @@
+{
+  "build": {
+    "nixpacksPlan": {
+      "providers": [
+        "node"
+      ],
+      "phases": {
+        "install": "npm i -g pnpm || true && pnpm i",
+        "build": "pnpm build"
+      }
+    }
+  },
+  "deploy": {
+    "startCommand": "node dist/main.js",
+    "healthcheckPath": "/api/docs",
+    "restartPolicyType": "on_failure"
+  }
+}

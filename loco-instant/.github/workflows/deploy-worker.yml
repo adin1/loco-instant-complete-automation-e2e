@@ -1,0 +1,35 @@
+name: Deploy Outbox Worker
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy-worker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm i -g pnpm && pnpm i
+
+      - name: Build project
+        run: pnpm build
+
+      - name: Deploy worker to Render
+        if: ${{ secrets.RENDER_SERVICE_ID_WORKER && secrets.RENDER_API_KEY }}
+        uses: render-examples/deploy-render-action@v1
+        with:
+          serviceId: ${{ secrets.RENDER_SERVICE_ID_WORKER }}
+          apiKey: ${{ secrets.RENDER_API_KEY }}
+
+      - name: Deploy worker to Railway
+        if: ${{ secrets.RAILWAY_TOKEN_WORKER }}
+        uses: railwayapp/action-deploy@v1
+        with:
+          railwayToken: ${{ secrets.RAILWAY_TOKEN_WORKER }}

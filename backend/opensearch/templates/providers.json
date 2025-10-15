@@ -1,0 +1,61 @@
+{
+  "index_patterns": [
+    "loco_providers_v*"
+  ],
+  "priority": 200,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 1,
+      "refresh_interval": "1s"
+    },
+    "mappings": {
+      "properties": {
+        "tenant_code": {
+          "type": "keyword"
+        },
+        "provider_id": {
+          "type": "keyword"
+        },
+        "name": {
+          "type": "text",
+          "analyzer": "romanian",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "service_ids": {
+          "type": "keyword"
+        },
+        "service_names": {
+          "type": "text",
+          "analyzer": "romanian",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "rating_avg": {
+          "type": "float"
+        },
+        "rating_count": {
+          "type": "integer"
+        },
+        "is_instant": {
+          "type": "boolean"
+        },
+        "location": {
+          "type": "geo_point"
+        },
+        "updated_at": {
+          "type": "date"
+        }
+      }
+    }
+  }
+}

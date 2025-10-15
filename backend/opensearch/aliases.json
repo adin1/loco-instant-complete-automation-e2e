@@ -1,0 +1,16 @@
+{
+  "actions": [
+    {
+      "add": {
+        "index": "loco_providers_v1",
+        "alias": "loco_providers"
+      }
+    },
+    {
+      "add": {
+        "index": "loco_orders_v1",
+        "alias": "loco_orders"
+      }
+    }
+  ]
+}

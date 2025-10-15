@@ -1,0 +1,54 @@
+services:
+  - type: web
+    name: loco-api
+    env: node
+    plan: free
+    buildCommand: "npm i -g pnpm || true && pnpm i && pnpm build"
+    startCommand: "node dist/main.js"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - fromGroup: loco-shared
+  - type: worker
+    name: loco-outbox-worker
+    env: node
+    plan: free
+    buildCommand: "npm i -g pnpm || true && pnpm i && pnpm build"
+    startCommand: "node dist/worker/outbox-worker.js"
+    envVars:
+      - fromGroup: loco-shared
+envVarGroups:
+  - name: loco-shared
+    envVars:
+      - key: TENANT_CODE
+        value: cluj
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: PG_HOST
+        sync: false
+      - key: PG_PORT
+        value: "5432"
+      - key: PG_DATABASE
+        value: postgres
+      - key: PG_USER
+        value: postgres
+      - key: PG_PASSWORD
+        sync: false
+      - key: PG_SSL
+        value: "true"
+      - key: REDIS_URL
+        sync: false
+      - key: OS_NODE
+        sync: false
+      - key: OS_USERNAME
+        sync: false
+      - key: OS_PASSWORD
+        sync: false
+      - key: OS_TLS_REJECT_UNAUTHORIZED
+        value: "false"
