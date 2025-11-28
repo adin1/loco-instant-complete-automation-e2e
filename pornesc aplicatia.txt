@@ -1,0 +1,10 @@
+C:\Users\adina.traica\loco-instant-complete-automation-e2e\frontend\loco_instant_flutter
+
+   cd C:\Users\adina.traica\loco-instant-complete-automation-e2e\frontend\loco_instant_flutter
+   flutter run -d chrome --
+
+in backend
+
+cd backend; npm run start:dev
+
+
