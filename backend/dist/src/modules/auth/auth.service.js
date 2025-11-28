@@ -8,13 +8,68 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
-const supabase_js_1 = require("@supabase/supabase-js");
+const client_1 = require("@prisma/client");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 let AuthService = class AuthService {
     constructor() {
-        this.supabase = (0, supabase_js_1.createClient)(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+        this.prisma = new client_1.PrismaClient();
     }
-    signup(email, password) { return this.supabase.auth.signUp({ email, password }); }
-    login(email, password) { return this.supabase.auth.signInWithPassword({ email, password }); }
+    async register(email, password, name) {
+        const existing = await this.prisma.user.findUnique({ where: { email } });
+        if (existing) {
+            throw new Error('User already exists');
+        }
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = await this.prisma.user.create({
+            data: {
+                email,
+                password: hashedPassword,
+                name,
+            },
+        });
+        return newUser;
+    }
+    async validateUser(email, password) {
+        const user = await this.prisma.user.findUnique({ where: { email } });
+        if (!user) {
+            throw new Error('User not found');
+        }
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            throw new Error('Invalid password');
+        }
+        return user;
+    }
+    async login(email, password) {
+        if (email === 'demo@loco-instant.ro' &&
+            password === 'Parola123!' &&
+            (process.env.ALLOW_DEMO_LOGIN === '1' || process.env.NODE_ENV !== 'production')) {
+            const demoUser = {
+                id: -1,
+                email,
+                password: '',
+                name: 'Demo User',
+            };
+            const payload = { sub: demoUser.id, email: demoUser.email };
+            const token = jwt.sign(payload, process.env.JWT_SECRET || 'local_secret_key', {
+                expiresIn: '7d',
+            });
+            return {
+                access_token: token,
+                user: demoUser,
+            };
+        }
+        const user = await this.validateUser(email, password);
+        const payload = { sub: user.id, email: user.email };
+        const token = jwt.sign(payload, process.env.JWT_SECRET || 'local_secret_key', {
+            expiresIn: '7d',
+        });
+        return {
+            access_token: token,
+            user,
+        };
+    }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([

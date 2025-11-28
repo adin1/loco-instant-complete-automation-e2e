@@ -1,5 +1,6 @@
 import { Client } from '@opensearch-project/opensearch';
 export declare class OpenSearchService {
-    client: Client;
+    private client;
     constructor();
+    getClient(): Client | null;
 }

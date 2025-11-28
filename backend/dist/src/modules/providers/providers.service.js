@@ -18,9 +18,30 @@ let ProvidersService = class ProvidersService {
         this.pg = pg;
         this.redis = redis;
     }
+    async listAll() { return this.pg.query('select * from providers order by id desc'); }
+    async findNearby(lat, lon, radiusMeters) {
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+            throw new Error('Invalid coordinates');
+        }
+        const rows = await this.pg.query(`
+      select p.*, l.address,
+             ST_Distance(l.geom, ST_MakePoint($1, $2)::geography) as distance_m
+      from providers p
+      join locations l
+        on l.owner_type = 'provider'
+       and l.owner_id = p.id
+      where ST_DWithin(l.geom, ST_MakePoint($1, $2)::geography, $3)
+      order by distance_m asc
+      limit 100
+      `, [lon, lat, radiusMeters]);
+        return rows;
+    }
     async getOne(id) { return (await this.pg.query('select * from providers where id=$1', [id]))[0]; }
     async getStatus(id) { return this.redis.client.get(`provider:${id}:status`); }
-    async setStatus(id, status) { await this.redis.client.set(`provider:${id}:status`, status, 'EX', 300); return { id, status }; }
+    async setStatus(id, status) {
+        await this.redis.client.set(`provider:${id}:status`, status, { EX: 300 });
+        return { id, status };
+    }
 };
 exports.ProvidersService = ProvidersService;
 exports.ProvidersService = ProvidersService = __decorate([

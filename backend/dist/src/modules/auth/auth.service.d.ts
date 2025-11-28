@@ -1,5 +1,21 @@
 export declare class AuthService {
-    private supabase;
-    signup(email: string, password: string): Promise<import("@supabase/supabase-js").AuthResponse>;
-    login(email: string, password: string): Promise<import("@supabase/supabase-js").AuthTokenResponsePassword>;
+    private prisma;
+    register(email: string, password: string, name?: string): Promise<{
+        email: string;
+        password: string;
+        name: string | null;
+        createdAt: Date;
+        id: number;
+    }>;
+    validateUser(email: string, password: string): Promise<{
+        email: string;
+        password: string;
+        name: string | null;
+        createdAt: Date;
+        id: number;
+    }>;
+    login(email: string, password: string): Promise<{
+        access_token: string;
+        user: any;
+    }>;
 }

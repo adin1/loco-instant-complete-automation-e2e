@@ -19,11 +19,30 @@ let ProvidersController = class ProvidersController {
     constructor(svc) {
         this.svc = svc;
     }
+    listAll() { return this.svc.listAll(); }
+    nearby(lat, lon, radiusMeters) {
+        return this.svc.findNearby(Number(lat), Number(lon), radiusMeters ? Number(radiusMeters) : 5000);
+    }
     getOne(id) { return this.svc.getOne(Number(id)); }
     getStatus(id) { return this.svc.getStatus(Number(id)); }
     setStatus(id, b) { return this.svc.setStatus(Number(id), b.status); }
 };
 exports.ProvidersController = ProvidersController;
+__decorate([
+    (0, common_1.Get)(),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], ProvidersController.prototype, "listAll", null);
+__decorate([
+    (0, common_1.Get)('nearby'),
+    __param(0, (0, common_1.Query)('lat')),
+    __param(1, (0, common_1.Query)('lon')),
+    __param(2, (0, common_1.Query)('radiusMeters')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:returntype", void 0)
+], ProvidersController.prototype, "nearby", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),

@@ -1,22 +1,65 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Pool } from 'pg';
 
+if (!process.env.SUPABASE_URL) {
+  process.env.SUPABASE_URL = 'http://localhost';
+  process.env.SUPABASE_KEY = 'dummy';
+  console.warn('⚠️ Supabase dummy config injected (local dev)');
+}
+
+const isProd = process.env.NODE_ENV === 'production';
+
+// În dev, ignorăm variabilele PG_* globale și folosim baza locală definită în docker-compose.local.yml
+const tenantDbHost = isProd ? process.env.PG_HOST || 'localhost' : 'localhost';
+const tenantDbPort = Number(process.env.PG_PORT || 5432);
+const tenantDbName = isProd ? process.env.PG_DATABASE || 'loco' : 'loco';
+const tenantDbUser = isProd ? process.env.PG_USER || 'postgres' : 'postgres';
+const tenantDbPassword = isProd ? process.env.PG_PASSWORD || 'postgres' : 'postgres';
+const tenantDbSsl =
+  isProd && process.env.PG_SSL === 'true' ? { rejectUnauthorized: false } : undefined;
+
 @Injectable()
 export class TenantMiddleware implements NestMiddleware {
   private pool = new Pool({
-    host: process.env.PG_HOST,
-    port: Number(process.env.PG_PORT || 5432),
-    database: process.env.PG_DATABASE,
-    user: process.env.PG_USER,
-    password: process.env.PG_PASSWORD,
-    ssl: process.env.PG_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+    host: tenantDbHost,
+    port: tenantDbPort,
+    database: tenantDbName,
+    user: tenantDbUser,
+    password: tenantDbPassword,
+    ssl: tenantDbSsl,
   });
 
   async use(req: any, res: any, next: () => void) {
+    // În development nu mai încercăm să facem setarea multi-tenant, doar continuăm request-ul.
+    if (!isProd) {
+      return next();
+    }
+
     const tenantCode = process.env.TENANT_CODE || 'cluj';
-    req.db = await this.pool.connect();
-    await req.db.query(`select set_config('app.tenant_id', (select id::text from tenants where code=$1), true)`, [tenantCode]);
-    res.on('finish', () => req.db.release());
+
+    try {
+      req.db = await this.pool.connect();
+
+      // Verifică dacă tabela 'tenants' există înainte de query
+      const checkTable = await req.db.query(`
+        SELECT to_regclass('public.tenants') as exists;
+      `);
+
+      if (checkTable.rows[0].exists) {
+        await req.db.query(
+          `select set_config('app.tenant_id', (select id::text from tenants where code=$1 limit 1), true)`,
+          [tenantCode],
+        );
+      } else {
+        console.warn('⚠️ Tabela "tenants" nu există - continuăm fără filtrare multi-tenant.');
+      }
+
+      res.on('finish', () => req.db.release());
+    } catch (err) {
+      console.error('⚠️ Tenant middleware error:', err.message);
+      // Important: nu blocăm aplicația
+    }
+
     next();
   }
 }

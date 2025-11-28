@@ -1,6 +1,8 @@
-import { OnModuleInit } from '@nestjs/common';
-import Redis from 'ioredis';
-export declare class RedisService implements OnModuleInit {
-    client: Redis;
-    onModuleInit(): void;
+import { OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { RedisClientType } from 'redis';
+export declare class RedisService implements OnModuleInit, OnModuleDestroy {
+    client: RedisClientType;
+    constructor();
+    onModuleInit(): Promise<void>;
+    onModuleDestroy(): Promise<void>;
 }

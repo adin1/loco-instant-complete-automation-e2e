@@ -14,11 +14,26 @@ const opensearch_1 = require("@opensearch-project/opensearch");
 const common_1 = require("@nestjs/common");
 let OpenSearchService = class OpenSearchService {
     constructor() {
+        this.client = null;
+        if (!process.env.OS_NODE) {
+            console.warn('⚠️ OpenSearch not configured, continuing without it');
+            return;
+        }
+        if (process.env.DISABLE_OPENSEARCH === 'true') {
+            console.warn('⚠️ OpenSearch disabled by env flag');
+            return;
+        }
         this.client = new opensearch_1.Client({
             node: process.env.OS_NODE,
-            auth: { username: process.env.OS_USERNAME, password: process.env.OS_PASSWORD },
-            ssl: { rejectUnauthorized: process.env.OS_TLS_REJECT_UNAUTHORIZED !== 'false' }
+            auth: {
+                username: process.env.OS_USERNAME || 'admin',
+                password: process.env.OS_PASSWORD || 'admin',
+            },
         });
+        console.log('✅ OpenSearch client initialized');
+    }
+    getClient() {
+        return this.client;
     }
 };
 exports.OpenSearchService = OpenSearchService;

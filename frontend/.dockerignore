@@ -1,0 +1,9 @@
+node_modules
+npm-debug.log
+.git
+Dockerfile
+docker-compose.yml
+pnpm-lock.yaml
+package-lock.json
+
+

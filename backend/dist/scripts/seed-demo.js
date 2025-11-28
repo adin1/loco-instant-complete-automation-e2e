@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const pg_1 = require("pg");
-const dotenv_1 = require("dotenv");
-dotenv_1.default.config();
+const dotenv = require("dotenv");
+dotenv.config();
 const db = new pg_1.Client({
     connectionString: process.env.DATABASE_URL,
 });

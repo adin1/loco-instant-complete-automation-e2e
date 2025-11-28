@@ -1,6 +1,12 @@
 import { Module } from '@nestjs/common';
-import { ProvidersController } from './providers.controller';
 import { ProvidersService } from './providers.service';
+import { ProvidersController } from './providers.controller';
+import { PgService } from '../../infra/db/pg.service';
+import { RedisService } from '../../infra/redis/redis.service';
 
-@Module({ controllers: [ProvidersController], providers: [ProvidersService] })
+@Module({
+  providers: [ProvidersService, PgService, RedisService],
+  exports: [ProvidersService],
+  controllers: [ProvidersController],
+})
 export class ProvidersModule {}

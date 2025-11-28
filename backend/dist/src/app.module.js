@@ -10,12 +10,21 @@ exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const pg_service_1 = require("./infra/db/pg.service");
 const redis_service_1 = require("./infra/redis/redis.service");
-const opensearch_service_1 = require("./infra/os/opensearch.service");
 const tenant_middleware_1 = require("./common/middleware/tenant.middleware");
 const auth_module_1 = require("./modules/auth/auth.module");
 const providers_module_1 = require("./modules/providers/providers.module");
 const orders_module_1 = require("./modules/orders/orders.module");
 const search_module_1 = require("./modules/search/search.module");
+const opensearch_module_1 = require("./modules/opensearch/opensearch.module");
+const users_module_1 = require("./modules/users/users.module");
+const requests_module_1 = require("./modules/requests/requests.module");
+const offers_module_1 = require("./modules/offers/offers.module");
+const chat_module_1 = require("./modules/chat/chat.module");
+const payments_module_1 = require("./modules/payments/payments.module");
+const reviews_module_1 = require("./modules/reviews/reviews.module");
+const notifications_module_1 = require("./modules/notifications/notifications.module");
+const realtime_module_1 = require("./modules/realtime/realtime.module");
+const health_controller_1 = require("./health.controller");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer.apply(tenant_middleware_1.TenantMiddleware).forRoutes('*');
@@ -24,8 +33,23 @@ let AppModule = class AppModule {
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [auth_module_1.AuthModule, providers_module_1.ProvidersModule, orders_module_1.OrdersModule, search_module_1.SearchModule],
-        providers: [pg_service_1.PgService, redis_service_1.RedisService, opensearch_service_1.OpenSearchService],
+        imports: [
+            auth_module_1.AuthModule,
+            providers_module_1.ProvidersModule,
+            orders_module_1.OrdersModule,
+            search_module_1.SearchModule,
+            opensearch_module_1.OpensearchModule,
+            users_module_1.UsersModule,
+            requests_module_1.RequestsModule,
+            offers_module_1.OffersModule,
+            chat_module_1.ChatModule,
+            payments_module_1.PaymentsModule,
+            reviews_module_1.ReviewsModule,
+            notifications_module_1.NotificationsModule,
+            realtime_module_1.RealtimeModule,
+        ],
+        providers: [pg_service_1.PgService, redis_service_1.RedisService],
+        controllers: [health_controller_1.HealthController],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

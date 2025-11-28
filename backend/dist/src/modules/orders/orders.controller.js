@@ -15,20 +15,67 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.OrdersController = void 0;
 const common_1 = require("@nestjs/common");
 const orders_service_1 = require("./orders.service");
+const create_order_dto_1 = require("./dto/create-order.dto");
+const update_order_dto_1 = require("./dto/update-order.dto");
 let OrdersController = class OrdersController {
-    constructor(svc) {
-        this.svc = svc;
+    constructor(ordersService) {
+        this.ordersService = ordersService;
     }
-    create(b) { return this.svc.create(b); }
+    async getAll(q) {
+        return this.ordersService.getAll(q);
+    }
+    async getById(id) {
+        return this.ordersService.getById(id);
+    }
+    async create(body) {
+        return this.ordersService.create(body);
+    }
+    async update(id, body) {
+        return this.ordersService.update(id, body);
+    }
+    async remove(id) {
+        return this.ordersService.delete(id);
+    }
 };
 exports.OrdersController = OrdersController;
 __decorate([
+    (0, common_1.Get)(),
+    __param(0, (0, common_1.Query)('q')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "getAll", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "getById", null);
+__decorate([
     (0, common_1.Post)(),
+    (0, common_1.UsePipes)(new common_1.ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:paramtypes", [create_order_dto_1.CreateOrderDto]),
+    __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "create", null);
+__decorate([
+    (0, common_1.Patch)(':id'),
+    (0, common_1.UsePipes)(new common_1.ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, update_order_dto_1.UpdateOrderDto]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "update", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "remove", null);
 exports.OrdersController = OrdersController = __decorate([
     (0, common_1.Controller)('orders'),
     __metadata("design:paramtypes", [orders_service_1.OrdersService])

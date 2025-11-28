@@ -1,0 +1,84 @@
+name: CI & Deploy (Railway + Render)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  ci:
+    name: Lint, Build & Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [22]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'npm'
+
+      # Frontend
+      - name: Frontend install
+        working-directory: ./frontend
+        run: npm ci
+      - name: Frontend build
+        working-directory: ./frontend
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'https://your-backend.example.com' }}
+        run: npm run build
+
+      # Backend
+      - name: Backend install
+        working-directory: ./backend
+        run: npm ci
+      - name: Prisma generate
+        working-directory: ./backend
+        run: npx prisma generate
+      - name: Backend build
+        working-directory: ./backend
+        run: npm run build
+      - name: Backend unit tests (optional)
+        if: ${{ false }}
+        working-directory: ./backend
+        run: npm test -- --run
+
+  deploy-railway:
+    name: Deploy to Railway
+    needs: ci
+    runs-on: ubuntu-latest
+    if: ${{ success() }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+      - name: Railway Up (Backend)
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: |
+          railway up --service backend --detach
+      - name: Railway Up (Worker)
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: |
+          railway up --service worker --detach
+
+  deploy-render:
+    name: Trigger Render Deploys
+    needs: [ci]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy Backend (Render)
+        run: |
+          curl -f -X POST "${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}"
+      - name: Deploy Frontend (Render)
+        run: |
+          curl -f -X POST "${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}"

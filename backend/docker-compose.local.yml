@@ -1,7 +1,46 @@
 version: '3.8'
+
 services:
-  api:
-    build: .
-    ports: ["3000:3000"]
-    env_file: .env
-    depends_on: []
+  postgres:
+    image: postgres:16
+    container_name: pg-loco
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: loco
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: redis-local
+    restart: always
+    ports:
+      - "6379:6379"
+
+  opensearch:
+    image: opensearchproject/opensearch:2
+    container_name: opensearch-dev
+    restart: always
+    environment:
+      discovery.type: single-node
+      plugins.security.disabled: 'true'
+      OPENSEARCH_INITIAL_ADMIN_PASSWORD: admin123!
+      http.cors.enabled: 'true'
+      http.cors.allow-origin: '*'
+      http.cors.allow-headers: 'Authorization,Content-Type'
+      http.cors.allow-methods: 'OPTIONS,HEAD,GET,POST,PUT,DELETE'
+      bootstrap.memory_lock: 'true'
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+
+volumes:
+  pgdata:

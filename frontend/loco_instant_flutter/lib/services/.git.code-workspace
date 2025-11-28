@@ -1,0 +1,31 @@
+{
+	"folders": [
+		{
+			"path": "../../../../.git"
+		},
+		{
+			"path": "../../../../.github"
+		},
+		{
+			"path": "../../../../backend"
+		},
+		{
+			"path": "../../.."
+		},
+		{
+			"path": "../../../../generated"
+		},
+		{
+			"path": "../../../../loco-frontend"
+		},
+		{
+			"path": "../../../../loco-instant"
+		},
+		{
+			"path": "../../../../prisma"
+		},
+		{
+			"path": "../../../../worker"
+		}
+	]
+}
