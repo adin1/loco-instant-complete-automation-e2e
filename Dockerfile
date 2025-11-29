@@ -37,8 +37,8 @@ RUN npm install --omit=dev
 
 # Copy prisma schema and regenerate client
 COPY --from=builder /app/prisma ./prisma
-RUN npm install prisma@5 @prisma/client@5
-RUN ./node_modules/.bin/prisma generate
+RUN npm install prisma@5 @prisma/client@5 --save
+RUN npx prisma@5 generate
 
 # Copy built app
 COPY --from=builder /app/dist ./dist
