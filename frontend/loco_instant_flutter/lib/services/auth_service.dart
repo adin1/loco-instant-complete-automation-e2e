@@ -36,6 +36,25 @@ class AuthService {
     return token;
   }
 
+  Future<void> register({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
+    final response = await _dio.post(
+      '$baseUrl/auth/register',
+      data: <String, dynamic>{
+        'name': name,
+        'email': email,
+        'password': password,
+      },
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Înregistrare eșuată');
+    }
+  }
+
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);

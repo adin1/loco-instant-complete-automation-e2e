@@ -90,33 +90,95 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'LOCO Instant',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    letterSpacing: 0.5,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 360),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Logo LOCO Instant - Pin umplut cu fulger centrat
+                  SizedBox(
+                    width: 100,
+                    height: 120,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Pin-ul turcoaz
+                        Positioned(
+                          top: 0,
+                          child: Icon(
+                            Icons.location_on,
+                            size: 120,
+                            color: Color(0xFF2DD4BF), // turcoaz
+                          ),
+                        ),
+                        // Cerc + fulger centrat în partea de sus a pin-ului
+                        Positioned(
+                          top: 18,
+                          child: Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: Color(0xFF2DD4BF), // același turcoaz
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.bolt,
+                              size: 46,
+                              color: Color(0xFFCDEB45), // galben-verde
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Servicii rapide, la câțiva kilometri distanță.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white70,
+                  const SizedBox(height: 20),
+                  // Titlu
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Text(
+                        'LOCO',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 2.0,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'INSTANT',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF2DD4BF),
+                          letterSpacing: 2.0,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 32),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'la un pas de tine',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.white,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  Card(
+                    elevation: 16,
+                    shadowColor: Colors.black38,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
                     child: Form(
                       key: _formKey,
                       child: Column(
@@ -193,12 +255,36 @@ class _LoginScreenState extends State<LoginScreen> {
                                   : const Text('Continuă'),
                             ),
                           ),
+                          const SizedBox(height: 16),
+                          // Link către înregistrare
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Nu ai cont? ',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () => context.go('/register'),
+                                child: Text(
+                                  'Creează unul',
+                                  style: TextStyle(
+                                    color: theme.colorScheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
                   ),
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -206,5 +292,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
-

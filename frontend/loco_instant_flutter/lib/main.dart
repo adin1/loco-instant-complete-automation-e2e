@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'features/auth/login_screen.dart';
+import 'features/auth/register_screen.dart';
 import 'features/opensearch/opensearch_crud_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/chat/chat_screen.dart';
@@ -20,6 +21,10 @@ final _router = GoRouter(
     GoRoute(
       path: '/login',
       builder: (context, state) => const LoginScreen(),
+    ),
+    GoRoute(
+      path: '/register',
+      builder: (context, state) => const RegisterScreen(),
     ),
     GoRoute(
       path: '/',
@@ -88,13 +93,13 @@ class MyApp extends StatelessWidget {
             color: primaryColor,
           ),
         ),
-        cardTheme: CardThemeData(
+        cardTheme: CardTheme(
           color: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
           elevation: 8,
-          shadowColor: Colors.black.withValues(alpha: 0.08),
+          shadowColor: Colors.black.withOpacity(0.08),
         ),
         inputDecorationTheme: InputDecorationTheme(
           border: OutlineInputBorder(

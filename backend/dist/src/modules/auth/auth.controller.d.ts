@@ -7,11 +7,11 @@ export declare class AuthController {
         password: string;
         name?: string;
     }): Promise<{
+        name: string | null;
+        id: number;
         email: string;
         password: string;
-        name: string | null;
         createdAt: Date;
-        id: number;
     }>;
     login(body: {
         email: string;

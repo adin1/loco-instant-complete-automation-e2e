@@ -61,7 +61,7 @@ class BackendApiService {
 
       return const <ProviderSearchResult>[];
     } catch (_) {
-      // Fallback demo providers when backend or search is unavailable
+      // Fallback demo providers - coordonate fixe în Cluj-Napoca
       return <ProviderSearchResult>[
         ProviderSearchResult(
           id: 'p1',
@@ -73,8 +73,8 @@ class BackendApiService {
           ratingAvg: 4.8,
           ratingCount: 32,
           isInstant: true,
-          lat: lat + 0.01,
-          lon: lon + 0.01,
+          lat: 46.778,  // Cluj-Napoca centru
+          lon: 23.601,
         ),
         ProviderSearchResult(
           id: 'p2',
@@ -86,8 +86,34 @@ class BackendApiService {
           ratingAvg: 4.5,
           ratingCount: 18,
           isInstant: true,
-          lat: lat - 0.01,
-          lon: lon - 0.01,
+          lat: 46.765,  // Cluj-Napoca Mărăști
+          lon: 23.585,
+        ),
+        ProviderSearchResult(
+          id: 'p3',
+          tenantCode: 'cluj',
+          providerId: '3',
+          name: 'Curățenie profesională',
+          serviceIds: const ['menaj'],
+          serviceNames: const ['Curățenie', 'Menaj'],
+          ratingAvg: 4.9,
+          ratingCount: 56,
+          isInstant: true,
+          lat: 46.772,  // Cluj-Napoca Gheorgheni
+          lon: 23.612,
+        ),
+        ProviderSearchResult(
+          id: 'p4',
+          tenantCode: 'cluj',
+          providerId: '4',
+          name: 'Mecanic auto rapid',
+          serviceIds: const ['auto'],
+          serviceNames: const ['Mecanic', 'Auto'],
+          ratingAvg: 4.6,
+          ratingCount: 41,
+          isInstant: true,
+          lat: 46.758,  // Cluj-Napoca Zorilor
+          lon: 23.572,
         ),
       ];
     }

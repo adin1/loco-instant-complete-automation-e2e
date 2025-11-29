@@ -68,14 +68,16 @@ class _HomeScreenState extends State<HomeScreen> {
       _isGettingLocation = true;
     });
 
-    LatLng center = _fallbackCenter;
+    LatLng center = _fallbackCenter; // Fallback: Cluj-Napoca
 
     try {
+      // Verifică dacă serviciile de localizare sunt activate
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         throw Exception('Serviciile de localizare sunt dezactivate.');
       }
 
+      // Verifică și cere permisiunea
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
@@ -86,19 +88,29 @@ class _HomeScreenState extends State<HomeScreen> {
         throw Exception('Permisiunea de localizare a fost refuzată.');
       }
 
+      // Obține locația curentă
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 10),
         ),
       );
       center = LatLng(position.latitude, position.longitude);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Locație găsită!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Folosim locația implicită (Cluj) – motiv: $e',
-            ),
+            content: Text('Folosim Cluj-Napoca – motiv: $e'),
             backgroundColor: Colors.orangeAccent,
           ),
         );
@@ -511,24 +523,20 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: TextStyle(fontSize: 12, color: Colors.grey),
                         )
                       else
-                        RadioGroup<int>(
-                          groupValue: selectedIndex,
-                          onChanged: (val) {
-                            if (val == null) return;
-                            setModalState(() {
-                              selectedIndex = val;
-                            });
-                          },
-                          child: Column(
-                            children: [
-                              ...List.generate(services.length, (index) {
-                                return RadioListTile<int>(
-                                  value: index,
-                                  title: Text(services[index]),
-                                );
-                              }),
-                            ],
-                          ),
+                        Column(
+                          children: List.generate(services.length, (index) {
+                            return RadioListTile<int>(
+                              value: index,
+                              groupValue: selectedIndex,
+                              onChanged: (val) {
+                                if (val == null) return;
+                                setModalState(() {
+                                  selectedIndex = val;
+                                });
+                              },
+                              title: Text(services[index]),
+                            );
+                          }),
                         ),
                       const SizedBox(height: 8),
                       SizedBox(
@@ -901,7 +909,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.05),
+                                      color: Colors.black.withOpacity(0.05),
                                       blurRadius: 8,
                                       offset: const Offset(0, 2),
                                     ),
