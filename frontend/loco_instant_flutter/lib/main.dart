@@ -9,6 +9,10 @@ import 'features/home/home_screen.dart';
 import 'features/chat/chat_screen.dart';
 import 'features/payments/payment_screen.dart';
 import 'features/reviews/review_screen.dart';
+import 'features/profile/profile_screen.dart';
+import 'features/orders/orders_history_screen.dart';
+import 'features/settings/settings_screen.dart';
+import 'features/notifications/notifications_screen.dart';
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
@@ -57,6 +61,22 @@ final _router = GoRouter(
             final orderId = int.tryParse(idParam) ?? 0;
             return ReviewScreen(orderId: orderId);
           },
+        ),
+        GoRoute(
+          path: 'profile',
+          builder: (context, state) => const ProfileScreen(),
+        ),
+        GoRoute(
+          path: 'orders',
+          builder: (context, state) => const OrdersHistoryScreen(),
+        ),
+        GoRoute(
+          path: 'settings',
+          builder: (context, state) => const SettingsScreen(),
+        ),
+        GoRoute(
+          path: 'notifications',
+          builder: (context, state) => const NotificationsScreen(),
         ),
       ],
     ),
