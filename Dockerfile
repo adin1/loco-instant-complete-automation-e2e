@@ -6,6 +6,10 @@ WORKDIR /app
 COPY backend/package*.json ./
 RUN npm install
 
+# Copy prisma schema and generate client
+COPY prisma ./prisma
+RUN npx prisma generate
+
 COPY backend/ .
 
 # Build
