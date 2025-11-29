@@ -6,9 +6,9 @@ WORKDIR /app
 COPY backend/package*.json ./
 RUN npm install
 
-# Copy prisma schema and generate client
+# Copy prisma schema and generate client (use Prisma 5 for compatibility)
 COPY prisma ./prisma
-RUN npx prisma generate
+RUN npm install prisma@5 @prisma/client@5 && npx prisma generate
 
 COPY backend/ .
 
@@ -23,7 +23,7 @@ ENV NODE_ENV=production
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/prisma ./prisma
 RUN npm install --omit=dev
-RUN npx prisma generate
+RUN npm install prisma@5 @prisma/client@5 && npx prisma generate
 
 COPY --from=builder /app/dist ./dist
 
