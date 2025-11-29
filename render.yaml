@@ -1,0 +1,46 @@
+services:
+  - type: web
+    name: loco-instant-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: REDIS_URL
+        sync: false
+
+  - type: web
+    name: loco-instant-frontend
+    runtime: static
+    plan: free
+    region: frankfurt
+    rootDir: frontend/loco_instant_flutter
+    buildCommand: |
+      curl -O https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.24.0-stable.tar.xz && \
+      tar xf flutter_linux_3.24.0-stable.tar.xz && \
+      export PATH="$PATH:$PWD/flutter/bin" && \
+      flutter pub get && \
+      flutter build web --release --dart-define=API_BASE_URL=https://loco-instant-api.onrender.com
+    staticPublishPath: build/web
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=3600
+
