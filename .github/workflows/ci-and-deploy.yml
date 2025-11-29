@@ -20,15 +20,8 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: 'npm'
 
-      # Frontend
-      - name: Frontend install
-        working-directory: ./frontend
-        run: npm ci
-      - name: Frontend build
-        working-directory: ./frontend
-        env:
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'https://your-backend.example.com' }}
-        run: npm run build
+      # Frontend (Flutter - skip npm build, handled by separate workflow)
+      # Flutter web is built by deploy-flutter-web.yml
 
       # Backend
       - name: Backend install
