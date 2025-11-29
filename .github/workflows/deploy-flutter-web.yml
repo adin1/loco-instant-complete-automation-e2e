@@ -33,7 +33,7 @@ jobs:
 
       - name: Build web
         working-directory: frontend/loco_instant_flutter
-        run: flutter build web --release --base-href "/loco-instant-complete-automation-e2e/" --dart-define=API_BASE_URL=https://loco-instant-complete-automation-e2e.onrender.com
+        run: flutter build web --release --base-href "/loco-instant-complete-automation-e2e/" --dart-define=API_BASE_URL=https://loco-api.onrender.com
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
