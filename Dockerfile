@@ -28,6 +28,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=10000
 
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl openssl-dev
+
 # Copy package files and install production deps
 COPY --from=builder /app/package*.json ./
 RUN npm install --omit=dev
