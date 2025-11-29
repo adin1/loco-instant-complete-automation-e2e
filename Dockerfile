@@ -34,11 +34,11 @@ RUN apk add --no-cache openssl openssl-dev
 # Copy package files and install production deps
 COPY --from=builder /app/package*.json ./
 RUN npm install --omit=dev
-RUN npm install @prisma/client@5
 
-# Copy prisma and generate
+# Copy prisma schema and regenerate client
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+RUN npm install prisma@5 @prisma/client@5
+RUN npx prisma generate
 
 # Copy built app
 COPY --from=builder /app/dist ./dist
