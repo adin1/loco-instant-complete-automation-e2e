@@ -15,3 +15,8 @@ RUN npm install --omit=dev
 COPY --from=builder /app ./
 EXPOSE 3000
 CMD ["npm", "run", "start"]
+node_modules
+npm-debug.log
+.git
+Dockerfile
+docker-compose.yml

@@ -22,10 +22,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   // Câmp unic pentru adresă / stradă (zonă de căutare prestatori)
   final _addressController = TextEditingController();
+  final FocusNode _addressFocusNode = FocusNode();
   final Completer<GoogleMapController> _mapController = Completer();
 
   // Fallback pe Cluj dacă nu putem obține locația
   static const LatLng _fallbackCenter = LatLng(46.770439, 23.591423);
+  static const String _currentLocationLabel = 'Locația mea actuală';
 
   late final BackendApiService _api;
   final List<ProviderSearchResult> _providers = <ProviderSearchResult>[];
@@ -57,6 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _addressController.dispose();
+    _addressFocusNode.dispose();
     super.dispose();
   }
 
@@ -84,7 +87,9 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
       center = LatLng(position.latitude, position.longitude);
     } catch (e) {
@@ -106,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _currentCenter = center;
       _isGettingLocation = false;
       // Autocomplete pentru câmpul de adresă cu locația curentă (label informativ)
-      _addressController.text = 'Locația mea actuală';
+      _addressController.text = _currentLocationLabel;
     });
 
     if (_mapController.isCompleted) {
@@ -234,6 +239,55 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  /// Afișează un selector simplu: locația curentă sau altă adresă.
+  Future<void> _showLocationChoice() async {
+    final choice = await showDialog<String>(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return Align(
+          alignment: Alignment.topCenter,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 16, left: 16, right: 16),
+              child: Material(
+                borderRadius: BorderRadius.circular(16),
+                color: Colors.white,
+                elevation: 6,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.my_location),
+                      title: const Text('Folosește locația mea actuală'),
+                      onTap: () => Navigator.of(context).pop('current'),
+                    ),
+                    const Divider(height: 0),
+                    ListTile(
+                      leading: const Icon(Icons.edit_location_alt_outlined),
+                      title: const Text('Introdu altă adresă'),
+                      onTap: () => Navigator.of(context).pop('custom'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted) return;
+
+    if (choice == 'current') {
+      _addressController.text = _currentLocationLabel;
+      await _initLocationAndSearch();
+    } else if (choice == 'custom') {
+      _addressController.clear();
+      FocusScope.of(context).requestFocus(_addressFocusNode);
+    }
+  }
+
   Set<Marker> get _markers {
     return _providers
         .map(
@@ -300,20 +354,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   double _degToRad(double deg) => deg * math.pi / 180.0;
 
-  Future<void> _createOrder() async {
-    // Dacă nu este selectat explicit un provider dar avem rezultate,
-    // folosim automat primul provider din listă (cel mai apropiat în demo).
-    if (_selectedProvider == null && _providers.isNotEmpty) {
-      _onProviderSelected(_providers.first);
-    } else if (_selectedProvider == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Nu există prestatori disponibili în zonă.'),
-          backgroundColor: Colors.orangeAccent,
-        ),
-      );
-      return;
-    }
+  Future<void> _createOrder(int serviceIndex) async {
+    if (_selectedProvider == null) return;
+
+    final services = _selectedProvider!.serviceNames;
+    final String serviceName =
+        (serviceIndex >= 0 && serviceIndex < services.length)
+            ? services[serviceIndex]
+            : 'Serviciu';
 
     setState(() {
       _isCreatingOrder = true;
@@ -322,9 +370,19 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final providerIdInt = int.tryParse(_selectedProvider!.providerId);
 
+      // Încercăm să mapăm serviciul selectat la un ID numeric, altfel folosim 1 (demo).
+      final int serviceId = () {
+        if (serviceIndex >= 0 &&
+            serviceIndex < _selectedProvider!.serviceIds.length) {
+          final rawId = _selectedProvider!.serviceIds[serviceIndex];
+          return int.tryParse(rawId) ?? 1;
+        }
+        return 1;
+      }();
+
       final response = await _api.createOrder(
         customerId: 1,
-        serviceId: 1,
+        serviceId: serviceId,
         providerId: providerIdInt,
         status: 'pending',
         priceEstimate: null,
@@ -341,8 +399,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Comanda a fost creată. Așteptăm oferta de la șofer...'),
+        SnackBar(
+          content: Text(
+            'Comanda a fost creată pentru serviciul: $serviceName',
+          ),
           backgroundColor: Colors.green,
         ),
       );
@@ -352,6 +412,9 @@ class _HomeScreenState extends State<HomeScreen> {
           _activeOrderId = orderId;
           _activeOrderStatus = 'pending';
         });
+        if (orderId != null) {
+          await _showOrderSummary(orderId, serviceName);
+        }
       }
     } catch (e) {
       if (!mounted) return;
@@ -368,6 +431,270 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     }
+  }
+
+  Future<void> _openOrderSheet() async {
+    // Dacă nu este selectat explicit un provider dar avem rezultate,
+    // folosim automat primul provider din listă (cel mai apropiat în demo).
+    if (_selectedProvider == null && _providers.isNotEmpty) {
+      await _onProviderSelected(_providers.first);
+    } else if (_selectedProvider == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nu există prestatori disponibili în zonă.'),
+          backgroundColor: Colors.orangeAccent,
+        ),
+      );
+      return;
+    }
+
+    // După așteptarea selecției provider-ului, verificăm din nou că widgetul
+    // este încă montat înainte de a folosi `context` mai departe.
+    if (!mounted) return;
+
+    final services = _selectedProvider!.serviceNames;
+
+    int selectedIndex = 0;
+
+    final result = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: StatefulBuilder(
+            builder: (context, setModalState) {
+              return SafeArea(
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _selectedProvider!.name,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => Navigator.of(context).pop(false),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Alege serviciul pentru care vrei să faci comanda:',
+                        style: TextStyle(fontSize: 13, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 12),
+                      if (services.isEmpty)
+                        const Text(
+                          'Acest prestator nu are servicii definite. '
+                          'Vom folosi un serviciu generic.',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        )
+                      else
+                        RadioGroup<int>(
+                          groupValue: selectedIndex,
+                          onChanged: (val) {
+                            if (val == null) return;
+                            setModalState(() {
+                              selectedIndex = val;
+                            });
+                          },
+                          child: Column(
+                            children: [
+                              ...List.generate(services.length, (index) {
+                                return RadioListTile<int>(
+                                  value: index,
+                                  title: Text(services[index]),
+                                );
+                              }),
+                            ],
+                          ),
+                        ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          child: const Text('Confirmă comanda'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+
+    if (result == true) {
+      await _createOrder(selectedIndex);
+    }
+  }
+
+  Future<void> _showOrderSummary(int orderId, String serviceName) async {
+    final provider = _selectedProvider;
+    if (provider == null || !mounted) return;
+
+    final estimatedPriceText = _estimatedPrice == null
+        ? '—'
+        : '${_estimatedPrice!.toStringAsFixed(0)} RON';
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        provider.name,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  provider.serviceNames.join(', '),
+                  style: const TextStyle(fontSize: 13, color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Descriere prestator (demo)',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Prestator local verificat, disponibil pentru intervenții rapide '
+                  'în zona ta. Program 08:00–22:00, timp mediu de răspuns 15 minute.',
+                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Serviciu selectat',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        serviceName,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Tarif estimat',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          Text(
+                            estimatedPriceText,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          context.push('/chat/$orderId');
+                        },
+                        icon: const Icon(Icons.chat_bubble_outline),
+                        label: const Text('Chat cu prestatorul'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          context.push('/payment/$orderId');
+                        },
+                        icon: const Icon(Icons.payment),
+                        label: const Text('Mergi la plată'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -443,6 +770,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       Expanded(
                         child: TextField(
                           controller: _addressController,
+                          focusNode: _addressFocusNode,
+                          textInputAction: TextInputAction.search,
+                          onSubmitted: (_) => _searchByAddress(),
+                          onTap: () {
+                            if (_addressController.text == _currentLocationLabel) {
+                              _showLocationChoice();
+                            }
+                          },
                           decoration: const InputDecoration(
                             border: InputBorder.none,
                             hintText: 'Ex: Str. Eroilor 10, Cluj',
@@ -566,7 +901,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
+                                      color: Colors.black.withValues(alpha: 0.05),
                                       blurRadius: 8,
                                       offset: const Offset(0, 2),
                                     ),
@@ -688,7 +1023,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       width: 160,
                       child: ElevatedButton(
                         onPressed:
-                            _isCreatingOrder ? null : _createOrder,
+                            _isCreatingOrder ? null : _openOrderSheet,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(

@@ -1,10 +1,60 @@
-C:\Users\adina.traica\loco-instant-complete-automation-e2e\frontend\loco_instant_flutter
+
+Porneste aplicatia
+
+cd C:\Users\adina.traica\loco-instant-complete-automation-e2e\frontend\loco_instant_flutter
 
    cd C:\Users\adina.traica\loco-instant-complete-automation-e2e\frontend\loco_instant_flutter
    flutter run -d chrome --
 
 in backend
+cd C:\Users\adina.traica\loco-instant-complete-automation-e2e\backend
 
 cd backend; npm run start:dev
 
 
+github sa inpingi proiectul
+
+cd C:\Users\adina.traica\loco-instant-complete-automation-e2e
+
+# 1. Aduce modificările din GitHub peste ce ai tu, fără merge-commit suplimentar
+git pull --rebase origin main
+
+# dacă nu apar conflicte sau după ce le rezolvi:
+
+# 2. Împingi backup-ul tău în GitHub
+git push origin main
+
+
+cd C:\Users\adina.traica\loco-instant-complete-automation-e2e
+
+# 1. Salvează TOT ce ai acum local într-un commit nou
+git add .
+git commit -m "Local changes before pull"
+
+# 2. Adu în jos ultimele modificări din GitHub, punând commit-urile tale deasupra
+git pull --rebase origin main
+
+# 3. După ce rebase-ul reușește (fără erori sau după ce rezolvi eventualele conflicte)
+git push origin main
+
+
+
+git add <fisierele_rezolvate>
+git rebase --continue
+git push origin main
+
+Backup într-o altă locație (offline / cloud)
+Ai două variante simple:
+Copiere folder (backup brut):
+
+robocopy "C:\Users\adina.traica\loco-instant-complete-automation-e2e" "D:\Backups\loco-instant-complete-automation-e2e" /MIR /XD .git node_modules build .dart_tool
+
+trebuie pornite serviciile din Docker:
+
+cd C:\Users\adina.traica\loco-instant-complete-automation-e2e\backend
+docker compose -f docker-compose.local.yml up -d
+npm run start:dev
+
+Repornește:
+    cd C:\Users\adina.traica\loco-instant-complete-automation-e2e\frontend\loco_instant_flutter
+    flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:3000

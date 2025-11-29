@@ -94,7 +94,7 @@ class MyApp extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
           ),
           elevation: 8,
-          shadowColor: Colors.black.withOpacity(0.08),
+          shadowColor: Colors.black.withValues(alpha: 0.08),
         ),
         inputDecorationTheme: InputDecorationTheme(
           border: OutlineInputBorder(
