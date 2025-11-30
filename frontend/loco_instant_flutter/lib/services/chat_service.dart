@@ -110,7 +110,7 @@ class ChatService {
     _addMessage(message);
 
     // Simulează trimiterea
-    await Future.delayed(const Duration(milliseconds: 300 + _random.nextInt(300)));
+    await Future.delayed(Duration(milliseconds: 300 + _random.nextInt(300)));
 
     // Actualizează status la "sent"
     _updateMessageStatus(message.id, MessageStatus.sent);

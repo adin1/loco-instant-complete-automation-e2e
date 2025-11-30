@@ -385,7 +385,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                   ),
-                  ),
+                  ), // Card
+                  ), // SlideInWidget
                 ],
               ),
             ),

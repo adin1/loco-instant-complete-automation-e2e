@@ -465,7 +465,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         bottom: MediaQuery.of(context).padding.bottom + 8,
       ),
       decoration: BoxDecoration(
-        color: isDark ? Colors.grey.shade850 : Colors.white,
+        color: isDark ? Colors.grey.shade800 : Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
