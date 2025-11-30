@@ -33,7 +33,10 @@ jobs:
 
       - name: Build web
         working-directory: frontend/loco_instant_flutter
-        run: flutter build web --release --base-href "/loco-instant-complete-automation-e2e/" --dart-define=API_BASE_URL=https://loco-api.onrender.com
+        run: flutter build web --release --base-href "/" --dart-define=API_BASE_URL=https://api.loco-instant.ro
+
+      - name: Add CNAME for custom domain
+        run: echo "loco-instant.ro" > frontend/loco_instant_flutter/build/web/CNAME
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
