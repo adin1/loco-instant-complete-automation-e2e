@@ -11,6 +11,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../models/provider_search_result.dart';
 import '../../services/backend_api_service.dart';
+import '../../widgets/advanced_search_filters.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -31,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   late final BackendApiService _api;
   final List<ProviderSearchResult> _providers = <ProviderSearchResult>[];
+  List<ProviderSearchResult> _filteredProviders = <ProviderSearchResult>[];
   ProviderSearchResult? _selectedProvider;
   bool _isLoadingProviders = false;
   bool _isCreatingOrder = false;
@@ -39,8 +41,19 @@ class _HomeScreenState extends State<HomeScreen> {
   LatLng _currentCenter = _fallbackCenter;
   bool _isGettingLocation = false;
   double? _estimatedPrice;
+  SearchFilters _searchFilters = const SearchFilters();
   static const _apiBaseUrlOverride =
       String.fromEnvironment('API_BASE_URL', defaultValue: '');
+
+  // Categorii disponibile pentru filtrare
+  static const List<String> _availableCategories = [
+    'Transport',
+    'Reparații',
+    'Curățenie',
+    'Instalații',
+    'Electrician',
+    'Livrare',
+  ];
 
   @override
   void initState() {
@@ -150,6 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _providers
           ..clear()
           ..addAll(results);
+        _applyFilters();
       });
     } catch (e) {
       if (!mounted) return;
@@ -166,6 +180,100 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     }
+  }
+
+  /// Aplică filtrele curente pe lista de provideri
+  void _applyFilters() {
+    var filtered = List<ProviderSearchResult>.from(_providers);
+
+    // Filtru distanță
+    if (_searchFilters.maxDistance != null) {
+      filtered = filtered.where((p) {
+        final distance = _distanceInKm(
+          _currentCenter,
+          LatLng(p.lat, p.lon),
+        );
+        return distance <= _searchFilters.maxDistance!;
+      }).toList();
+    }
+
+    // Filtru rating
+    if (_searchFilters.minRating != null) {
+      filtered = filtered.where((p) {
+        return (p.ratingAvg ?? 0) >= _searchFilters.minRating!;
+      }).toList();
+    }
+
+    // Filtru instant
+    if (_searchFilters.onlyInstant) {
+      filtered = filtered.where((p) => p.isInstant).toList();
+    }
+
+    // Sortare
+    switch (_searchFilters.sortBy) {
+      case SortOption.distance:
+        filtered.sort((a, b) {
+          final distA = _distanceInKm(_currentCenter, LatLng(a.lat, a.lon));
+          final distB = _distanceInKm(_currentCenter, LatLng(b.lat, b.lon));
+          return distA.compareTo(distB);
+        });
+        break;
+      case SortOption.rating:
+        filtered.sort((a, b) {
+          return (b.ratingAvg ?? 0).compareTo(a.ratingAvg ?? 0);
+        });
+        break;
+      case SortOption.name:
+        filtered.sort((a, b) => a.name.compareTo(b.name));
+        break;
+      case SortOption.priceAsc:
+      case SortOption.priceDesc:
+        // Pentru demo, sortăm după distanță ca proxy pentru preț
+        filtered.sort((a, b) {
+          final distA = _distanceInKm(_currentCenter, LatLng(a.lat, a.lon));
+          final distB = _distanceInKm(_currentCenter, LatLng(b.lat, b.lon));
+          return _searchFilters.sortBy == SortOption.priceAsc
+              ? distA.compareTo(distB)
+              : distB.compareTo(distA);
+        });
+        break;
+    }
+
+    setState(() {
+      _filteredProviders = filtered;
+    });
+  }
+
+  /// Deschide sheet-ul cu filtre avansate
+  void _openFiltersSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) => AdvancedSearchFiltersSheet(
+          initialFilters: _searchFilters,
+          availableCategories: _availableCategories,
+          onApply: (newFilters) {
+            setState(() {
+              _searchFilters = newFilters;
+            });
+            _applyFilters();
+          },
+        ),
+      ),
+    );
+  }
+
+  /// Șterge toate filtrele
+  void _clearAllFilters() {
+    setState(() {
+      _searchFilters = const SearchFilters();
+    });
+    _applyFilters();
   }
 
   /// Caută o zonă pe hartă după adresă / stradă și apoi încarcă prestatori în jur.
@@ -301,7 +409,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Set<Marker> get _markers {
-    return _providers
+    return _filteredProviders
         .map(
           (p) => Marker(
             markerId: MarkerId(p.id),
@@ -448,8 +556,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _openOrderSheet() async {
     // Dacă nu este selectat explicit un provider dar avem rezultate,
     // folosim automat primul provider din listă (cel mai apropiat în demo).
-    if (_selectedProvider == null && _providers.isNotEmpty) {
-      await _onProviderSelected(_providers.first);
+    if (_selectedProvider == null && _filteredProviders.isNotEmpty) {
+      await _onProviderSelected(_filteredProviders.first);
     } else if (_selectedProvider == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -834,14 +942,40 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton.icon(
-                      onPressed: _searchByAddress,
-                      icon: const Icon(Icons.search),
-                      label: const Text('Găsește furnizor de servicii'),
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Buton filtre
+                      TextButton.icon(
+                        onPressed: _openFiltersSheet,
+                        icon: Badge(
+                          isLabelVisible: _searchFilters.hasActiveFilters,
+                          child: const Icon(Icons.tune),
+                        ),
+                        label: const Text('Filtre'),
+                      ),
+                      TextButton.icon(
+                        onPressed: _searchByAddress,
+                        icon: const Icon(Icons.search),
+                        label: const Text('Caută'),
+                      ),
+                    ],
                   ),
+                  // Chip-uri filtre active
+                  if (_searchFilters.hasActiveFilters)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: ActiveFiltersChips(
+                        filters: _searchFilters,
+                        onClearAll: _clearAllFilters,
+                        onRemoveFilter: (newFilters) {
+                          setState(() {
+                            _searchFilters = newFilters;
+                          });
+                          _applyFilters();
+                        },
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -1024,13 +1158,28 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
                 const SizedBox(height: 12),
+                // Număr rezultate
+                if (_filteredProviders.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      '${_filteredProviders.length} rezultate${_searchFilters.hasActiveFilters ? ' (filtrate)' : ''}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
                 SizedBox(
                   height: 110,
-                  child: _providers.isEmpty
-                      ? const Center(
+                  child: _filteredProviders.isEmpty
+                      ? Center(
                           child: Text(
-                            'Nu sunt mașini disponibile în zonă. Încearcă să cauți din nou.',
-                            style: TextStyle(
+                            _searchFilters.hasActiveFilters
+                                ? 'Niciun rezultat pentru filtrele selectate. Încearcă alte filtre.'
+                                : 'Nu sunt mașini disponibile în zonă. Încearcă să cauți din nou.',
+                            style: const TextStyle(
                               fontSize: 12,
                               color: Colors.grey,
                             ),
@@ -1039,10 +1188,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         )
                       : ListView.separated(
                           scrollDirection: Axis.horizontal,
-                          itemCount: _providers.length,
+                          itemCount: _filteredProviders.length,
                           separatorBuilder: (_, __) => const SizedBox(width: 12),
                           itemBuilder: (context, index) {
-                            final provider = _providers[index];
+                            final provider = _filteredProviders[index];
                             final isSelected =
                                 _selectedProvider?.id == provider.id;
                             return GestureDetector(
