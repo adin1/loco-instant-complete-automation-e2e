@@ -1,23 +1,26 @@
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../services/auth_service.dart';
 import '../../widgets/animated_widgets.dart';
+import '../../providers/provider_state.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isSubmitting = false;
+  bool _isProvider = false; // Toggle pentru client/prestator
   late final AuthService _authService;
   static const _apiBaseUrlOverride =
       String.fromEnvironment('API_BASE_URL', defaultValue: '');
@@ -58,7 +61,15 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (!mounted) return;
-      context.go('/');
+      
+      // Setează rolul și redirecționează
+      if (_isProvider) {
+        ref.read(userRoleProvider.notifier).setRole(UserRole.provider);
+        context.go('/provider');
+      } else {
+        ref.read(userRoleProvider.notifier).setRole(UserRole.client);
+        context.go('/');
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -204,6 +215,84 @@ class _LoginScreenState extends State<LoginScreen> {
                             textAlign: TextAlign.left,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          // Toggle Client / Prestator
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: () => setState(() => _isProvider = false),
+                                    child: AnimatedContainer(
+                                      duration: const Duration(milliseconds: 200),
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      decoration: BoxDecoration(
+                                        color: !_isProvider
+                                            ? theme.colorScheme.primary
+                                            : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.person,
+                                            size: 18,
+                                            color: !_isProvider ? Colors.white : Colors.grey,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'Client',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              color: !_isProvider ? Colors.white : Colors.grey,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: () => setState(() => _isProvider = true),
+                                    child: AnimatedContainer(
+                                      duration: const Duration(milliseconds: 200),
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      decoration: BoxDecoration(
+                                        color: _isProvider
+                                            ? theme.colorScheme.primary
+                                            : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.handyman,
+                                            size: 18,
+                                            color: _isProvider ? Colors.white : Colors.grey,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'Prestator',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              color: _isProvider ? Colors.white : Colors.grey,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           const SizedBox(height: 16),

@@ -13,6 +13,8 @@ import 'features/profile/profile_screen.dart';
 import 'features/orders/orders_history_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/notifications/notifications_screen.dart';
+import 'features/provider/provider_dashboard_screen.dart';
+import 'features/provider/provider_services_screen.dart';
 import 'providers/theme_provider.dart';
 
 void main() {
@@ -78,6 +80,33 @@ final _router = GoRouter(
         GoRoute(
           path: 'notifications',
           builder: (context, state) => const NotificationsScreen(),
+        ),
+      ],
+    ),
+    // Rute pentru prestatori
+    GoRoute(
+      path: '/provider',
+      builder: (context, state) => const ProviderDashboardScreen(),
+      routes: [
+        GoRoute(
+          path: 'services',
+          builder: (context, state) => const ProviderServicesScreen(),
+        ),
+        GoRoute(
+          path: 'orders',
+          builder: (context, state) => const OrdersHistoryScreen(), // TODO: Provider orders
+        ),
+        GoRoute(
+          path: 'profile',
+          builder: (context, state) => const ProfileScreen(), // TODO: Provider profile
+        ),
+        GoRoute(
+          path: 'chat/:orderId',
+          builder: (context, state) {
+            final idParam = state.pathParameters['orderId'] ?? '0';
+            final orderId = int.tryParse(idParam) ?? 0;
+            return ChatScreen(orderId: orderId);
+          },
         ),
       ],
     ),
