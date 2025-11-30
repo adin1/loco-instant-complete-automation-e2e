@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../services/auth_service.dart';
+import '../../widgets/animated_widgets.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -97,81 +98,94 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo LOCO Instant - Pin umplut cu fulger centrat
-                  SizedBox(
-                    width: 100,
-                    height: 120,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Pin-ul turcoaz
-                        Positioned(
-                          top: 0,
-                          child: Icon(
-                            Icons.location_on,
-                            size: 120,
-                            color: Color(0xFF2DD4BF), // turcoaz
+                  // Logo LOCO Instant - Pin umplut cu fulger centrat (cu animație)
+                  ScaleInWidget(
+                    duration: const Duration(milliseconds: 800),
+                    curve: Curves.elasticOut,
+                    child: SizedBox(
+                      width: 100,
+                      height: 120,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Pin-ul turcoaz
+                          Positioned(
+                            top: 0,
+                            child: Icon(
+                              Icons.location_on,
+                              size: 120,
+                              color: Color(0xFF2DD4BF), // turcoaz
+                            ),
+                          ),
+                          // Cerc + fulger centrat în partea de sus a pin-ului
+                          Positioned(
+                            top: 18,
+                            child: Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color: Color(0xFF2DD4BF), // același turcoaz
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.bolt,
+                                size: 46,
+                                color: Color(0xFFCDEB45), // galben-verde
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Titlu cu animație
+                  FadeInWidget(
+                    delay: const Duration(milliseconds: 300),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Text(
+                          'LOCO',
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: 2.0,
                           ),
                         ),
-                        // Cerc + fulger centrat în partea de sus a pin-ului
-                        Positioned(
-                          top: 18,
-                          child: Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              color: Color(0xFF2DD4BF), // același turcoaz
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.bolt,
-                              size: 46,
-                              color: Color(0xFFCDEB45), // galben-verde
-                            ),
+                        SizedBox(width: 8),
+                        Text(
+                          'INSTANT',
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF2DD4BF),
+                            letterSpacing: 2.0,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  // Titlu
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Text(
-                        'LOCO',
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          letterSpacing: 2.0,
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        'INSTANT',
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF2DD4BF),
-                          letterSpacing: 2.0,
-                        ),
-                      ),
-                    ],
-                  ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'la un pas de tine',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.white,
-                      letterSpacing: 1.2,
+                  FadeInWidget(
+                    delay: const Duration(milliseconds: 500),
+                    child: const Text(
+                      'la un pas de tine',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.white,
+                        letterSpacing: 1.2,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 32),
-                  Card(
+                  SlideInWidget(
+                    delay: const Duration(milliseconds: 400),
+                    duration: const Duration(milliseconds: 600),
+                    child: Card(
                     elevation: 16,
                     shadowColor: Colors.black38,
                     shape: RoundedRectangleBorder(

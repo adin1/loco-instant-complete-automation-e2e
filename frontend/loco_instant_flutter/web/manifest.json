@@ -1,13 +1,33 @@
 {
-    "name": "loco_instant_flutter",
-    "short_name": "loco_instant_flutter",
-    "start_url": ".",
+    "name": "LOCO Instant",
+    "short_name": "LOCO",
+    "start_url": "/",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#1D4ED8",
+    "theme_color": "#2DD4BF",
+    "description": "Servicii rapide, la un pas de tine. Găsește și comandă servicii locale instant.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
+    "scope": "/",
+    "lang": "ro",
+    "categories": ["business", "lifestyle", "utilities"],
+    "screenshots": [],
+    "shortcuts": [
+        {
+            "name": "Acasă",
+            "short_name": "Acasă",
+            "description": "Mergi la pagina principală",
+            "url": "/",
+            "icons": [{"src": "icons/Icon-192.png", "sizes": "192x192"}]
+        },
+        {
+            "name": "Profil",
+            "short_name": "Profil",
+            "description": "Vezi profilul tău",
+            "url": "/#/profile",
+            "icons": [{"src": "icons/Icon-192.png", "sizes": "192x192"}]
+        }
+    ],
     "icons": [
         {
             "src": "icons/Icon-192.png",

@@ -13,6 +13,7 @@ import 'features/profile/profile_screen.dart';
 import 'features/orders/orders_history_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/notifications/notifications_screen.dart';
+import 'providers/theme_provider.dart';
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));
@@ -83,50 +84,21 @@ final _router = GoRouter(
   ],
 );
 
-// App root
-class MyApp extends StatelessWidget {
+// App root with Dark Mode support
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    const primaryColor = Color(0xFF2563EB); // albastru LOCO Instant
-    const surfaceColor = Color(0xFFF3F4F6);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
       routerConfig: _router,
       title: 'LOCO Instant',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: primaryColor,
-          brightness: Brightness.light,
-        ),
-        scaffoldBackgroundColor: surfaceColor,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: primaryColor,
-          elevation: 0,
-          centerTitle: true,
-          titleTextStyle: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: primaryColor,
-          ),
-        ),
-        cardTheme: CardTheme(
-          color: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          elevation: 8,
-          shadowColor: Colors.black.withOpacity(0.08),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
+      debugShowCheckedModeBanner: false,
+      theme: AppThemes.lightTheme,
+      darkTheme: AppThemes.darkTheme,
+      themeMode: themeMode,
     );
   }
 }

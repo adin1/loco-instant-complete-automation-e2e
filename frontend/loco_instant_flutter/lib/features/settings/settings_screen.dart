@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class SettingsScreen extends StatefulWidget {
+import '../../providers/theme_provider.dart';
+
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _notificationsEnabled = true;
   bool _emailNotifications = true;
   bool _smsNotifications = false;
-  bool _darkMode = false;
   bool _locationEnabled = true;
   String _language = 'Română';
 
@@ -59,15 +61,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           // Secțiunea Aspect
           _SectionHeader(title: 'Aspect'),
-          _SettingsTile(
-            icon: Icons.dark_mode,
-            title: 'Mod întunecat',
-            subtitle: 'Schimbă tema aplicației',
-            trailing: Switch(
-              value: _darkMode,
-              onChanged: (value) => setState(() => _darkMode = value),
-            ),
-          ),
+          _buildThemeTile(),
           _SettingsTile(
             icon: Icons.language,
             title: 'Limba',
@@ -132,6 +126,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 32),
         ],
+      ),
+    );
+  }
+
+  Widget _buildThemeTile() {
+    final themeMode = ref.watch(themeModeProvider);
+    final isDark = themeMode == ThemeMode.dark;
+    
+    return _SettingsTile(
+      icon: isDark ? Icons.dark_mode : Icons.light_mode,
+      title: 'Mod întunecat',
+      subtitle: isDark ? 'Temă întunecată activă' : 'Temă luminoasă activă',
+      trailing: Switch(
+        value: isDark,
+        onChanged: (value) {
+          ref.read(themeModeProvider.notifier).toggleTheme();
+        },
       ),
     );
   }
