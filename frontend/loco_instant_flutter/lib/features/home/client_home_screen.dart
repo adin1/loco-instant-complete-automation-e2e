@@ -13,6 +13,7 @@ class ClientHomeScreen extends ConsumerStatefulWidget {
 
 class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
   final _searchController = TextEditingController();
+  final _marketplaceSearchController = TextEditingController();
   final ScrollController _marketplaceScrollController = ScrollController();
   final Completer<GoogleMapController> _mapController = Completer();
   
@@ -23,7 +24,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
   // Cluj-Napoca coordinates
   static const LatLng _clujCenter = LatLng(46.770439, 23.591423);
 
-  // Categorii cu subcategorii (stil eMAG)
+  // Categorii cu subcategorii
   final List<Map<String, dynamic>> _categories = [
     {
       'icon': Icons.electrical_services,
@@ -122,7 +123,6 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
       'services': ['Gazon', 'Întreținere', 'Irigații'],
       'rating': 4.8,
     },
-    // Pagina 2
     {
       'id': '7',
       'name': 'Andrei Zugrav',
@@ -173,7 +173,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     },
   ];
 
-  // Produse marketplace (scroll vertical)
+  // Produse marketplace
   final List<Map<String, dynamic>> _marketplaceProducts = [
     {'name': 'Miere de albine 100% naturală', 'description': 'Direct de la producător, 1kg', 'price': '45 RON', 'image': 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=100&h=100&fit=crop'},
     {'name': 'Dulceață de căpșuni', 'description': 'Făcută în casă, 350g', 'price': '25 RON', 'image': 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=100&h=100&fit=crop'},
@@ -204,6 +204,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _marketplaceSearchController.dispose();
     _marketplaceScrollController.dispose();
     _marketplaceScrollTimer?.cancel();
     super.dispose();
@@ -269,7 +270,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
           const SizedBox(width: 32),
           Expanded(
             child: Container(
-              height: 44,
+              height: 48,
               decoration: BoxDecoration(
                 color: const Color(0xFF333333),
                 borderRadius: BorderRadius.circular(8),
@@ -277,27 +278,27 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
               child: Row(
                 children: [
                   const SizedBox(width: 16),
-                  Icon(Icons.search, color: Colors.grey.shade500, size: 20),
+                  Icon(Icons.search, color: Colors.grey.shade500, size: 24),
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextField(
                       controller: _searchController,
-                      style: const TextStyle(color: Colors.white),
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
                       decoration: InputDecoration(
                         hintText: 'Caută servicii sau prestatori...',
-                        hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+                        hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 16),
                         border: InputBorder.none,
                       ),
                     ),
                   ),
                   Container(
                     margin: const EdgeInsets.all(4),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     decoration: BoxDecoration(
                       color: const Color(0xFFCC0000),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: const Text('Căutare', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                    child: const Text('Căutare', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
                   ),
                 ],
               ),
@@ -317,9 +318,9 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
   Widget _buildHeaderIcon(IconData icon, String label) {
     return Row(
       children: [
-        Icon(icon, color: Colors.white, size: 20),
+        Icon(icon, color: Colors.white, size: 24),
         const SizedBox(width: 6),
-        Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
+        Text(label, style: const TextStyle(color: Colors.white, fontSize: 14)),
       ],
     );
   }
@@ -328,62 +329,75 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     return Row(
       children: [
         Container(
-          width: 32,
-          height: 32,
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
             color: const Color(0xFF2DD4BF),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(8),
           ),
-          child: const Icon(Icons.bolt, color: Color(0xFFCDEB45), size: 20),
+          child: const Icon(Icons.bolt, color: Color(0xFFCDEB45), size: 24),
         ),
-        const SizedBox(width: 8),
-        const Text('LOCO', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFFCC0000))),
-        const Text(' INSTANT', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF2DD4BF))),
+        const SizedBox(width: 10),
+        const Text('LOCO', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFFCC0000))),
+        const Text(' INSTANT', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF2DD4BF))),
       ],
     );
   }
 
   // ==================== DESKTOP LAYOUT ====================
   Widget _buildDesktopLayout() {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1440),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // LEFT SIDEBAR - Categories with hover submenu
-              SizedBox(width: 220, child: _buildCategoriesSidebar()),
-              const SizedBox(width: 16),
-              
-              // CENTER - Map + Providers
-              Expanded(flex: 3, child: _buildCenterContent()),
-              const SizedBox(width: 16),
-              
-              // RIGHT SIDEBAR - MarketPlace with auto-scroll
-              SizedBox(width: 280, child: _buildMarketPlaceSidebar()),
-            ],
+    return Stack(
+      children: [
+        // Main content
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1440),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // LEFT SIDEBAR - Categories
+                  SizedBox(width: 240, child: _buildCategoriesSidebar()),
+                  const SizedBox(width: 16),
+                  
+                  // CENTER - Map + Providers
+                  Expanded(flex: 3, child: _buildCenterContent()),
+                  const SizedBox(width: 16),
+                  
+                  // RIGHT SIDEBAR - Marketplace
+                  SizedBox(width: 300, child: _buildMarketplaceSidebar()),
+                ],
+              ),
+            ),
           ),
         ),
-      ),
+        
+        // Subcategories overlay (în fața hărții)
+        if (_hoveredCategoryIndex != null)
+          Positioned(
+            left: 272, // 240 (sidebar) + 16 (padding) + 16 (margin)
+            top: 80 + (_hoveredCategoryIndex! * 56.0),
+            child: _buildSubmenuOverlay(),
+          ),
+      ],
     );
   }
 
-  // ==================== LEFT SIDEBAR - CATEGORIES WITH HOVER ====================
+  // ==================== LEFT SIDEBAR - CATEGORIES ====================
   Widget _buildCategoriesSidebar() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12)],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           // Logo
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
             ),
@@ -391,20 +405,20 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
                     color: const Color(0xFF2DD4BF),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.bolt, color: Color(0xFFCDEB45), size: 24),
+                  child: const Icon(Icons.bolt, color: Color(0xFFCDEB45), size: 28),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('LOCO', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFFCC0000), height: 1)),
-                    Text('INSTANT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF2DD4BF), height: 1.2)),
+                    Text('LOCO', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFFCC0000), height: 1)),
+                    Text('INSTANT', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF2DD4BF), height: 1.2)),
                   ],
                 ),
               ],
@@ -413,130 +427,136 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
           
           // Categories
           ...List.generate(_categories.length, (index) {
-            return _buildCategoryItemWithSubmenu(index);
+            return _buildCategoryItem(index);
           }),
         ],
       ),
     );
   }
 
-  Widget _buildCategoryItemWithSubmenu(int index) {
+  Widget _buildCategoryItem(int index) {
     final category = _categories[index];
     final isHovered = _hoveredCategoryIndex == index;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hoveredCategoryIndex = index),
       onExit: (_) => setState(() => _hoveredCategoryIndex = null),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // Category item
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: isHovered ? const Color(0xFFF5F5F5) : Colors.white,
-              border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: isHovered ? const Color(0xFFF5F5F5) : Colors.white,
+          border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: isHovered ? const Color(0xFFCC0000) : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                category['icon'],
+                size: 20,
+                color: isHovered ? Colors.white : Colors.grey.shade600,
+              ),
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: isHovered ? const Color(0xFFCC0000) : Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Icon(
-                    category['icon'],
-                    size: 16,
-                    color: isHovered ? Colors.white : Colors.grey.shade600,
-                  ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                category['name'],
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: isHovered ? const Color(0xFFCC0000) : const Color(0xFF333333),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              size: 20,
+              color: isHovered ? const Color(0xFFCC0000) : Colors.grey.shade400,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubmenuOverlay() {
+    if (_hoveredCategoryIndex == null) return const SizedBox.shrink();
+    
+    final category = _categories[_hoveredCategoryIndex!];
+    final subcategories = category['subcategories'] as List<String>;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() {}),
+      onExit: (_) => setState(() => _hoveredCategoryIndex = null),
+      child: Container(
+        width: 280,
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 20,
+              offset: const Offset(4, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                category['name'],
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFCC0000),
+                ),
+              ),
+            ),
+            const Divider(height: 1),
+            ...subcategories.map((sub) {
+              return InkWell(
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Selectat: $sub')),
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Text(
-                    category['name'],
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: isHovered ? const Color(0xFFCC0000) : const Color(0xFF333333),
-                      letterSpacing: 0.2,
+                    sub,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: Color(0xFF444444),
                     ),
                   ),
                 ),
-              ],
-            ),
-          ),
-          
-          // Submenu (appears on hover)
-          if (isHovered)
-            Positioned(
-              left: 218,
-              top: 0,
-              child: _buildSubmenu(category['subcategories'] as List<String>),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSubmenu(List<String> subcategories) {
-    return Container(
-      width: 200,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.15),
-            blurRadius: 12,
-            offset: const Offset(4, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: subcategories.map((sub) {
-          return InkWell(
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Selectat: $sub')),
               );
-            },
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
-              ),
-              child: Text(
-                sub,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF555555),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
+            }),
+          ],
+        ),
       ),
     );
   }
 
-  // ==================== CENTER CONTENT - MAP + PROVIDERS ====================
+  // ==================== CENTER CONTENT ====================
   Widget _buildCenterContent() {
     return SingleChildScrollView(
       child: Column(
         children: [
-          // Google Maps Cluj-Napoca
           _buildGoogleMap(),
-          const SizedBox(height: 16),
-          
-          // Search bar
-          _buildSearchBar(),
           const SizedBox(height: 20),
-          
-          // Providers grid with arrows
+          _buildSearchBar(),
+          const SizedBox(height: 24),
           _buildProvidersSection(),
         ],
       ),
@@ -545,10 +565,10 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
 
   Widget _buildGoogleMap() {
     return Container(
-      height: 280,
+      height: 300,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 10)],
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 12)],
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
@@ -575,28 +595,27 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
             },
           ),
           
-          // Location badge
           Positioned(
-            top: 12,
-            left: 12,
+            top: 16,
+            left: 16,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(24),
                 boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8)],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 24,
-                    height: 24,
+                    width: 28,
+                    height: 28,
                     decoration: const BoxDecoration(color: Color(0xFFCC0000), shape: BoxShape.circle),
-                    child: const Icon(Icons.location_on, color: Colors.white, size: 14),
+                    child: const Icon(Icons.location_on, color: Colors.white, size: 16),
                   ),
-                  const SizedBox(width: 8),
-                  const Text('Cluj-Napoca', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                  const SizedBox(width: 10),
+                  const Text('Cluj-Napoca', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
                 ],
               ),
             ),
@@ -608,36 +627,38 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
 
   Widget _buildSearchBar() {
     return Container(
-      height: 48,
+      height: 56,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10)],
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12)],
       ),
       child: Row(
         children: [
-          const SizedBox(width: 18),
-          Icon(Icons.search, color: Colors.grey.shade500),
-          const SizedBox(width: 10),
+          const SizedBox(width: 20),
+          Icon(Icons.search, color: Colors.grey.shade500, size: 24),
+          const SizedBox(width: 12),
           const Expanded(
             child: TextField(
+              style: TextStyle(fontSize: 16),
               decoration: InputDecoration(
                 hintText: 'Caută servicii sau prestatori...',
+                hintStyle: TextStyle(fontSize: 16),
                 border: InputBorder.none,
               ),
             ),
           ),
           Container(
-            margin: const EdgeInsets.all(4),
+            margin: const EdgeInsets.all(6),
             child: ElevatedButton(
               onPressed: () {},
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFCC0000),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
               ),
-              child: const Text('Căutare', style: TextStyle(fontWeight: FontWeight.w600)),
+              child: const Text('Căutare', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
             ),
           ),
         ],
@@ -648,55 +669,50 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
   Widget _buildProvidersSection() {
     return Column(
       children: [
-        // Providers grid with navigation arrows
         Row(
           children: [
-            // Left arrow
             _buildNavigationArrow(Icons.chevron_left, _prevProviderPage),
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
             
-            // Providers grid (3x2)
             Expanded(
               child: Column(
                 children: [
                   Row(
                     children: [
                       Expanded(child: _buildProviderCard(_currentProviders[0])),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 16),
                       Expanded(child: _buildProviderCard(_currentProviders[1])),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 16),
                       Expanded(child: _buildProviderCard(_currentProviders[2])),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   Row(
                     children: [
                       Expanded(child: _buildProviderCard(_currentProviders.length > 3 ? _currentProviders[3] : {})),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 16),
                       Expanded(child: _buildProviderCard(_currentProviders.length > 4 ? _currentProviders[4] : {})),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 16),
                       Expanded(child: _buildProviderCard(_currentProviders.length > 5 ? _currentProviders[5] : {})),
                     ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
             
-            // Right arrow
             _buildNavigationArrow(Icons.chevron_right, _nextProviderPage),
           ],
         ),
         
-        // Page indicator
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(_totalPages, (index) {
             return Container(
-              width: 8,
-              height: 8,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: 10,
+              height: 10,
+              margin: const EdgeInsets.symmetric(horizontal: 5),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: _currentProviderPage == index ? const Color(0xFFCC0000) : Colors.grey.shade300,
@@ -712,14 +728,14 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 36,
-        height: 100,
+        width: 44,
+        height: 120,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8)],
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
         ),
-        child: Icon(icon, color: const Color(0xFFCC0000), size: 28),
+        child: Icon(icon, color: const Color(0xFFCC0000), size: 32),
       ),
     );
   }
@@ -727,100 +743,95 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
   Widget _buildProviderCard(Map<String, dynamic> provider) {
     if (provider.isEmpty) {
       return Container(
-        height: 220,
+        height: 260,
         decoration: BoxDecoration(
           color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
         ),
       );
     }
 
     return Container(
-      height: 220,
+      height: 260,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8)],
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 10)],
       ),
       child: Column(
         children: [
-          // Photo
           Container(
-            height: 70,
+            height: 80,
             width: double.infinity,
             decoration: BoxDecoration(
               color: Colors.grey.shade200,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
             ),
             child: Center(
               child: CircleAvatar(
-                radius: 28,
+                radius: 32,
                 backgroundImage: NetworkImage(provider['photo'] ?? ''),
                 onBackgroundImageError: (_, __) {},
-                child: provider['photo'] == null ? const Icon(Icons.person) : null,
+                child: provider['photo'] == null ? const Icon(Icons.person, size: 32) : null,
               ),
             ),
           ),
           
-          // Content
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Name & Rating
                   Row(
                     children: [
                       Expanded(
                         child: Text(
                           provider['name'] ?? '',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       Row(
                         children: [
-                          const Icon(Icons.star, size: 12, color: Colors.amber),
-                          Text(' ${provider['rating'] ?? 0}', style: const TextStyle(fontSize: 10)),
+                          const Icon(Icons.star, size: 16, color: Colors.amber),
+                          Text(' ${provider['rating'] ?? 0}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                         ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   
-                  // Motto
                   Text(
                     provider['motto'] ?? '',
-                    style: TextStyle(fontSize: 10, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   
-                  // Services
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: (provider['services'] as List<String>? ?? []).take(3).map((service) {
                         return Padding(
-                          padding: const EdgeInsets.only(bottom: 2),
+                          padding: const EdgeInsets.only(bottom: 4),
                           child: Row(
                             children: [
                               Container(
-                                width: 4,
-                                height: 4,
+                                width: 6,
+                                height: 6,
                                 decoration: const BoxDecoration(
                                   color: Color(0xFFCC0000),
                                   shape: BoxShape.circle,
                                 ),
                               ),
-                              const SizedBox(width: 6),
+                              const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   service,
-                                  style: const TextStyle(fontSize: 9, color: Color(0xFF555555)),
+                                  style: const TextStyle(fontSize: 12, color: Color(0xFF555555)),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -832,7 +843,6 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
                     ),
                   ),
                   
-                  // Button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -844,10 +854,10 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFCC0000),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
-                      child: const Text('Inițiază comanda', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
+                      child: const Text('Inițiază comanda', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                     ),
                   ),
                 ],
@@ -859,46 +869,63 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     );
   }
 
-  // ==================== RIGHT SIDEBAR - MARKETPLACE AUTO-SCROLL ====================
-  Widget _buildMarketPlaceSidebar() {
+  // ==================== RIGHT SIDEBAR - MARKETPLACE ====================
+  Widget _buildMarketplaceSidebar() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              'Market Place',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF333333)),
+          // Header cu titlu și buton căutare
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Marketplace',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Color(0xFF333333)),
+                  ),
+                ),
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCC0000),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: IconButton(
+                    onPressed: () {},
+                    icon: const Icon(Icons.search, color: Colors.white, size: 24),
+                  ),
+                ),
+              ],
             ),
           ),
           
-          // Subtitle
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
               'Produse de casă de vânzare',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           
-          // Auto-scrolling products
+          // Products
           SizedBox(
-            height: 400,
+            height: 420,
             child: MouseRegion(
               onEnter: (_) => _marketplaceScrollTimer?.cancel(),
               onExit: (_) => _startMarketplaceAutoScroll(),
               child: ListView.builder(
                 controller: _marketplaceScrollController,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _marketplaceProducts.length * 10, // Repeat for infinite scroll effect
+                itemCount: _marketplaceProducts.length * 10,
                 itemBuilder: (context, index) {
                   final product = _marketplaceProducts[index % _marketplaceProducts.length];
                   return _buildMarketplaceProduct(product);
@@ -910,24 +937,24 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
           // Banner
           Container(
             margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 colors: [Color(0xFF4CAF50), Color(0xFF8BC34A)],
               ),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
                   '🏠 Produse de casă',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   'Susține producătorii locali!',
-                  style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 11),
+                  style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14),
                 ),
               ],
             ),
@@ -939,21 +966,20 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
 
   Widget _buildMarketplaceProduct(Map<String, dynamic> product) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(10),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.grey.shade200),
       ),
       child: Row(
         children: [
-          // Product image
           Container(
-            width: 50,
-            height: 50,
+            width: 60,
+            height: 60,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(10),
               image: product['image'] != null
                   ? DecorationImage(
                       image: NetworkImage(product['image']),
@@ -963,33 +989,32 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
               color: product['image'] == null ? const Color(0xFFE8F5E9) : null,
             ),
             child: product['image'] == null
-                ? const Icon(Icons.eco, color: Color(0xFF4CAF50), size: 24)
+                ? const Icon(Icons.eco, color: Color(0xFF4CAF50), size: 28)
                 : null,
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           
-          // Product info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   product['name'] ?? '',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF333333)),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  product['description'] ?? '',
-                  style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF333333)),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
+                  product['description'] ?? '',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6),
+                Text(
                   product['price'] ?? '',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF4CAF50)),
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF4CAF50)),
                 ),
               ],
             ),
@@ -1006,13 +1031,13 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
       child: Column(
         children: [
           _buildGoogleMap(),
-          const SizedBox(height: 16),
-          _buildSearchBar(),
           const SizedBox(height: 20),
+          _buildSearchBar(),
+          const SizedBox(height: 24),
           _buildProvidersSection(),
-          const SizedBox(height: 24),
-          _buildMarketPlaceSidebar(),
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
+          _buildMarketplaceSidebar(),
+          const SizedBox(height: 28),
           _buildCategoriesSidebar(),
         ],
       ),

@@ -116,10 +116,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.symmetric(horizontal: 4),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected ? color.withOpacity(0.1) : Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isSelected ? color : Colors.grey.shade200,
             width: isSelected ? 2 : 1,
@@ -128,7 +128,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ? [
                   BoxShadow(
                     color: color.withOpacity(0.2),
-                    blurRadius: 8,
+                    blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
                 ]
@@ -137,18 +137,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: isSelected ? color : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 icon,
-                size: 24,
+                size: 20,
                 color: isSelected ? Colors.white : Colors.grey[600],
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -213,46 +213,44 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ),
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 360),
+              constraints: const BoxConstraints(maxWidth: 380),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo LOCO Instant - Pin umplut cu fulger centrat (cu animație)
+                  // Logo LOCO Instant - mai compact
                   ScaleInWidget(
                     duration: const Duration(milliseconds: 800),
                     curve: Curves.elasticOut,
                     child: SizedBox(
-                      width: 100,
-                      height: 120,
+                      width: 80,
+                      height: 96,
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                          // Pin-ul turcoaz
                           Positioned(
                             top: 0,
                             child: Icon(
                               Icons.location_on,
-                              size: 120,
-                              color: Color(0xFF2DD4BF), // turcoaz
+                              size: 96,
+                              color: Color(0xFF2DD4BF),
                             ),
                           ),
-                          // Cerc + fulger centrat în partea de sus a pin-ului
                           Positioned(
-                            top: 18,
+                            top: 14,
                             child: Container(
-                              width: 56,
-                              height: 56,
+                              width: 44,
+                              height: 44,
                               decoration: BoxDecoration(
-                                color: Color(0xFF2DD4BF), // același turcoaz
+                                color: Color(0xFF2DD4BF),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
                                 Icons.bolt,
-                                size: 46,
-                                color: Color(0xFFCDEB45), // galben-verde
+                                size: 36,
+                                color: Color(0xFFCDEB45),
                               ),
                             ),
                           ),
@@ -260,8 +258,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  // Titlu cu animație
+                  const SizedBox(height: 12),
+                  // Titlu
                   FadeInWidget(
                     delay: const Duration(milliseconds: 300),
                     child: Row(
@@ -270,17 +268,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         Text(
                           'LOCO',
                           style: TextStyle(
-                            fontSize: 32,
+                            fontSize: 28,
                             fontWeight: FontWeight.w900,
                             color: Colors.white,
                             letterSpacing: 2.0,
                           ),
                         ),
-                        SizedBox(width: 8),
+                        SizedBox(width: 6),
                         Text(
                           'INSTANT',
                           style: TextStyle(
-                            fontSize: 32,
+                            fontSize: 28,
                             fontWeight: FontWeight.w900,
                             color: Color(0xFF2DD4BF),
                             letterSpacing: 2.0,
@@ -289,21 +287,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 6),
                   FadeInWidget(
                     delay: const Duration(milliseconds: 500),
                     child: const Text(
                       'la un pas de tine',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.w400,
                         color: Colors.white,
                         letterSpacing: 1.2,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 20),
                   SlideInWidget(
                     delay: const Duration(milliseconds: 400),
                     duration: const Duration(milliseconds: 600),
@@ -314,7 +312,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.all(24),
+                      padding: const EdgeInsets.all(20),
                     child: Form(
                       key: _formKey,
                       child: Column(
