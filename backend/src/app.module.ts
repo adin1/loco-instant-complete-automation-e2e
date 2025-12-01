@@ -1,4 +1,5 @@
 import { Module, MiddlewareConsumer } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { PgService } from './infra/db/pg.service';
 import { RedisService } from './infra/redis/redis.service';
 // import { OpenSearchService } from './infra/os/opensearch.service';
@@ -16,10 +17,13 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
+import { EvidenceModule } from './modules/evidence/evidence.module';
+import { DisputesModule } from './modules/disputes/disputes.module';
 import { HealthController } from './health.controller';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     AuthModule,
     ProvidersModule,
     OrdersModule,
@@ -33,6 +37,8 @@ import { HealthController } from './health.controller';
     ReviewsModule,
     NotificationsModule,
     RealtimeModule,
+    EvidenceModule,
+    DisputesModule,
   ],
   providers: [PgService, RedisService],
   controllers: [HealthController],

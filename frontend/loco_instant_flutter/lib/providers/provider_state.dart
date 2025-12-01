@@ -7,6 +7,38 @@ import '../models/provider_service.dart';
 /// Starea utilizatorului (client sau prestator)
 enum UserRole { client, provider }
 
+/// Tipul de prestator (servicii sau marketplace)
+enum ProviderType { services, marketplace }
+
+extension ProviderTypeExtension on ProviderType {
+  String get label {
+    switch (this) {
+      case ProviderType.services:
+        return 'Prestări servicii';
+      case ProviderType.marketplace:
+        return 'Marketplace';
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case ProviderType.services:
+        return 'Găsește comenzi în zona ta';
+      case ProviderType.marketplace:
+        return 'Vinde prin platformă';
+    }
+  }
+
+  String get icon {
+    switch (this) {
+      case ProviderType.services:
+        return 'build';
+      case ProviderType.marketplace:
+        return 'storefront';
+    }
+  }
+}
+
 /// Notifier pentru rolul utilizatorului
 class UserRoleNotifier extends StateNotifier<UserRole> {
   UserRoleNotifier() : super(UserRole.client) {
@@ -39,6 +71,44 @@ class UserRoleNotifier extends StateNotifier<UserRole> {
 /// Provider pentru rolul utilizatorului
 final userRoleProvider = StateNotifierProvider<UserRoleNotifier, UserRole>(
   (ref) => UserRoleNotifier(),
+);
+
+/// Notifier pentru tipul de prestator
+class ProviderTypeNotifier extends StateNotifier<ProviderType?> {
+  ProviderTypeNotifier() : super(null) {
+    _loadType();
+  }
+
+  static const _key = 'provider_type';
+
+  Future<void> _loadType() async {
+    final prefs = await SharedPreferences.getInstance();
+    final value = prefs.getString(_key);
+    if (value == 'services') {
+      state = ProviderType.services;
+    } else if (value == 'marketplace') {
+      state = ProviderType.marketplace;
+    } else {
+      state = null;
+    }
+  }
+
+  Future<void> setType(ProviderType type) async {
+    state = type;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_key, type.name);
+  }
+
+  Future<void> clearType() async {
+    state = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_key);
+  }
+}
+
+/// Provider pentru tipul de prestator
+final providerTypeProvider = StateNotifierProvider<ProviderTypeNotifier, ProviderType?>(
+  (ref) => ProviderTypeNotifier(),
 );
 
 /// Notifier pentru profilul prestatorului

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class OrdersHistoryScreen extends StatefulWidget {
   const OrdersHistoryScreen({super.key});
@@ -130,141 +131,8 @@ class _OrdersHistoryScreenState extends State<OrdersHistoryScreen>
   }
 
   void _showOrderDetails(_Order order) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.4,
-        maxChildSize: 0.9,
-        expand: false,
-        builder: (context, scrollController) => SingleChildScrollView(
-          controller: scrollController,
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Comandă #${order.id}',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 16),
-              _DetailRow(
-                icon: Icons.person,
-                label: 'Prestator',
-                value: order.providerName,
-              ),
-              _DetailRow(
-                icon: Icons.build,
-                label: 'Serviciu',
-                value: order.service,
-              ),
-              _DetailRow(
-                icon: Icons.calendar_today,
-                label: 'Data',
-                value: _formatDate(order.date),
-              ),
-              _DetailRow(
-                icon: Icons.attach_money,
-                label: 'Preț',
-                value: '${order.price.toStringAsFixed(0)} RON',
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: order.statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  order.status,
-                  style: TextStyle(
-                    color: order.statusColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              if (order.hasReview && order.rating != null) ...[
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    const Text('Rating dat: '),
-                    ...List.generate(
-                      5,
-                      (i) => Icon(
-                        i < order.rating! ? Icons.star : Icons.star_border,
-                        color: Colors.amber,
-                        size: 20,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-              const SizedBox(height: 24),
-              if (order.status == 'Finalizat' && !order.hasReview)
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // Navighează la review
-                    },
-                    icon: const Icon(Icons.star),
-                    label: const Text('Lasă o recenzie'),
-                  ),
-                ),
-              if (order.status == 'În așteptare' || order.status == 'În lucru')
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // Anulează comanda
-                    },
-                    icon: const Icon(Icons.cancel, color: Colors.red),
-                    label: const Text(
-                      'Anulează comanda',
-                      style: TextStyle(color: Colors.red),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.red),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final diff = now.difference(date);
-    
-    if (diff.inHours < 24) {
-      return 'Azi, ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-    } else if (diff.inDays == 1) {
-      return 'Ieri';
-    } else {
-      return '${date.day}/${date.month}/${date.year}';
-    }
+    // Navighează la ecranul de detalii comandă
+    context.go('/order/${order.id}');
   }
 }
 
@@ -392,41 +260,6 @@ class _OrderCard extends StatelessWidget {
     } else {
       return '${date.day}/${date.month}';
     }
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _DetailRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: Colors.grey[600]),
-          const SizedBox(width: 12),
-          Text(
-            '$label: ',
-            style: TextStyle(color: Colors.grey[600]),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 

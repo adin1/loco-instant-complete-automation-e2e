@@ -1,4 +1,5 @@
 import { IsInt, IsOptional, IsString, IsNumber, IsIn } from 'class-validator';
+import { ORDER_STATUSES } from './create-order.dto';
 
 export class UpdateOrderDto {
   @IsOptional()
@@ -15,7 +16,7 @@ export class UpdateOrderDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['pending','assigned','in_progress','completed','canceled'])
+  @IsIn(ORDER_STATUSES)
   status?: string;
 
   @IsOptional()
@@ -33,4 +34,22 @@ export class UpdateOrderDto {
   @IsOptional()
   @IsNumber()
   originLng?: number;
+}
+
+// DTO for completing work (provider)
+export class CompleteWorkDto {
+  @IsOptional()
+  @IsString()
+  completionNotes?: string;
+}
+
+// DTO for confirming work (customer)
+export class ConfirmWorkDto {
+  @IsOptional()
+  @IsInt()
+  rating?: number;
+
+  @IsOptional()
+  @IsString()
+  feedback?: string;
 }

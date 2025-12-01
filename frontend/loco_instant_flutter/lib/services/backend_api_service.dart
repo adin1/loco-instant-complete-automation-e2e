@@ -211,6 +211,209 @@ class BackendApiService {
 
     return _dio.post('$baseUrl/reviews', data: body);
   }
+
+  // ========================================
+  // ORDER WORKFLOW ENDPOINTS
+  // ========================================
+
+  /// Get order by ID with full details
+  Future<Response<dynamic>> getOrderById(int orderId) async {
+    return _dio.get('$baseUrl/orders/$orderId');
+  }
+
+  /// Get order status timeline
+  Future<Response<dynamic>> getOrderTimeline(int orderId) async {
+    return _dio.get('$baseUrl/orders/$orderId/timeline');
+  }
+
+  /// Provider marks as en route
+  Future<Response<dynamic>> markEnRoute(int orderId) async {
+    return _dio.post('$baseUrl/orders/$orderId/en-route');
+  }
+
+  /// Provider starts work
+  Future<Response<dynamic>> startWork(int orderId) async {
+    return _dio.post('$baseUrl/orders/$orderId/start-work');
+  }
+
+  /// Provider completes work
+  Future<Response<dynamic>> completeWork(int orderId, {String? notes}) async {
+    return _dio.post('$baseUrl/orders/$orderId/complete-work', data: {
+      if (notes != null) 'completionNotes': notes,
+    });
+  }
+
+  /// Customer confirms work
+  Future<Response<dynamic>> confirmOrder(int orderId, {int? rating, String? feedback}) async {
+    return _dio.post('$baseUrl/orders/$orderId/confirm', data: {
+      if (rating != null) 'rating': rating,
+      if (feedback != null) 'feedback': feedback,
+    });
+  }
+
+  // ========================================
+  // EVIDENCE ENDPOINTS
+  // ========================================
+
+  /// Get evidence for an order
+  Future<Response<dynamic>> getEvidence(int orderId) async {
+    return _dio.get('$baseUrl/evidence/order/$orderId');
+  }
+
+  /// Get upload URL for evidence
+  Future<Response<dynamic>> getEvidenceUploadUrl({
+    required int orderId,
+    required String evidenceType,
+    required String mediaType,
+    required String fileName,
+    required int fileSize,
+  }) async {
+    return _dio.post('$baseUrl/evidence/upload-url', data: {
+      'orderId': orderId,
+      'evidenceType': evidenceType,
+      'mediaType': mediaType,
+      'fileName': fileName,
+      'fileSize': fileSize,
+    });
+  }
+
+  /// Create evidence record after upload
+  Future<Response<dynamic>> createEvidence({
+    required int orderId,
+    required String evidenceType,
+    required String mediaType,
+    required String fileUrl,
+    String? thumbnailUrl,
+    String? description,
+  }) async {
+    return _dio.post('$baseUrl/evidence', data: {
+      'orderId': orderId,
+      'evidenceType': evidenceType,
+      'mediaType': mediaType,
+      'fileUrl': fileUrl,
+      if (thumbnailUrl != null) 'thumbnailUrl': thumbnailUrl,
+      if (description != null) 'description': description,
+    });
+  }
+
+  /// Check if required evidence exists
+  Future<Response<dynamic>> checkEvidenceRequired(int orderId) async {
+    return _dio.get('$baseUrl/evidence/order/$orderId/check');
+  }
+
+  // ========================================
+  // DISPUTE ENDPOINTS
+  // ========================================
+
+  /// Create a dispute (report problem)
+  Future<Response<dynamic>> createDispute({
+    required int orderId,
+    required String category,
+    required String title,
+    required String description,
+    String? whatNotWorking,
+    String? technicalDetails,
+    List<String>? evidenceUrls,
+  }) async {
+    return _dio.post('$baseUrl/disputes', data: {
+      'orderId': orderId,
+      'category': category,
+      'title': title,
+      'description': description,
+      if (whatNotWorking != null) 'whatNotWorking': whatNotWorking,
+      if (technicalDetails != null) 'technicalDetails': technicalDetails,
+      if (evidenceUrls != null) 'evidenceUrls': evidenceUrls,
+    });
+  }
+
+  /// Get dispute by ID
+  Future<Response<dynamic>> getDispute(int disputeId) async {
+    return _dio.get('$baseUrl/disputes/$disputeId');
+  }
+
+  /// Get disputes for an order
+  Future<Response<dynamic>> getDisputesByOrder(int orderId) async {
+    return _dio.get('$baseUrl/disputes/order/$orderId');
+  }
+
+  // ========================================
+  // PAYMENT ESCROW ENDPOINTS
+  // ========================================
+
+  /// Get payment status for an order
+  Future<Response<dynamic>> getPaymentByOrder(int orderId) async {
+    return _dio.get('$baseUrl/payments/order/$orderId');
+  }
+
+  /// Authorize payment (pre-auth)
+  Future<Response<dynamic>> authorizePayment({
+    required int paymentId,
+    required String paymentMethodId,
+  }) async {
+    return _dio.post('$baseUrl/payments/authorize', data: {
+      'paymentId': paymentId,
+      'stripePaymentMethodId': paymentMethodId,
+    });
+  }
+
+  /// Release escrow payment
+  Future<Response<dynamic>> releasePayment(int paymentId, {String? notes}) async {
+    return _dio.post('$baseUrl/payments/release', data: {
+      'paymentId': paymentId,
+      if (notes != null) 'notes': notes,
+    });
+  }
+
+  // ========================================
+  // CHAT ENDPOINTS
+  // ========================================
+
+  /// Get chat messages for an order
+  Future<Response<dynamic>> getChatMessages(int orderId, {int? limit, String? before}) async {
+    return _dio.get('$baseUrl/chat/order/$orderId', queryParameters: {
+      if (limit != null) 'limit': limit,
+      if (before != null) 'before': before,
+    });
+  }
+
+  /// Mark messages as read
+  Future<Response<dynamic>> markMessagesRead(int orderId) async {
+    return _dio.post('$baseUrl/chat/mark-read', data: {
+      'orderId': orderId,
+    });
+  }
+
+  /// Get unread count
+  Future<Response<dynamic>> getUnreadCount(int orderId) async {
+    return _dio.get('$baseUrl/chat/order/$orderId/unread');
+  }
+
+  // ========================================
+  // BLOCK/RATING ENDPOINTS
+  // ========================================
+
+  /// Block a user
+  Future<Response<dynamic>> blockUser({
+    required int userId,
+    required String reason,
+    String? notes,
+  }) async {
+    return _dio.post('$baseUrl/reviews/block', data: {
+      'userId': userId,
+      'reason': reason,
+      if (notes != null) 'notes': notes,
+    });
+  }
+
+  /// Unblock a user
+  Future<Response<dynamic>> unblockUser(int userId) async {
+    return _dio.delete('$baseUrl/reviews/block/$userId');
+  }
+
+  /// Check if blocked
+  Future<Response<dynamic>> checkBlocked(int userId) async {
+    return _dio.get('$baseUrl/reviews/block/check/$userId');
+  }
 }
 
 

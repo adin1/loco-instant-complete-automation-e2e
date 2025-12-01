@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../services/auth_service.dart';
 import '../../widgets/animated_widgets.dart';
-import '../../providers/provider_state.dart';
+import '../../providers/provider_state.dart' show UserRole, userRoleProvider, ProviderType, providerTypeProvider;
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -21,6 +21,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isSubmitting = false;
   bool _isProvider = false; // Toggle pentru client/prestator
+  ProviderType? _providerType; // Tipul de prestator selectat
   late final AuthService _authService;
   static const _apiBaseUrlOverride =
       String.fromEnvironment('API_BASE_URL', defaultValue: '');
@@ -50,6 +51,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     }
 
+    // Validare tip prestator
+    if (_isProvider && _providerType == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Te rugăm să selectezi tipul de activitate'),
+          backgroundColor: Colors.orangeAccent,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isSubmitting = true;
     });
@@ -65,9 +77,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       // Setează rolul și redirecționează
       if (_isProvider) {
         ref.read(userRoleProvider.notifier).setRole(UserRole.provider);
+        ref.read(providerTypeProvider.notifier).setType(_providerType!);
         context.go('/provider');
       } else {
         ref.read(userRoleProvider.notifier).setRole(UserRole.client);
+        ref.read(providerTypeProvider.notifier).clearType();
         context.go('/');
       }
     } catch (e) {
@@ -85,6 +99,103 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         });
       }
     }
+  }
+
+  Widget _buildProviderTypeCard({
+    required ProviderType type,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required ThemeData theme,
+  }) {
+    final isSelected = _providerType == type;
+    
+    return GestureDetector(
+      onTap: () => setState(() => _providerType = type),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withOpacity(0.1) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? color : Colors.grey.shade200,
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: color.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: isSelected ? color : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                size: 24,
+                color: isSelected ? Colors.white : Colors.grey[600],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? color : Colors.grey[800],
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected ? color : Colors.transparent,
+                border: Border.all(
+                  color: isSelected ? color : Colors.grey.shade300,
+                  width: 2,
+                ),
+              ),
+              child: isSelected
+                  ? const Icon(
+                      Icons.check,
+                      size: 14,
+                      color: Colors.white,
+                    )
+                  : null,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -228,7 +339,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               children: [
                                 Expanded(
                                   child: GestureDetector(
-                                    onTap: () => setState(() => _isProvider = false),
+                                    onTap: () => setState(() {
+                                      _isProvider = false;
+                                      _providerType = null;
+                                    }),
                                     child: AnimatedContainer(
                                       duration: const Duration(milliseconds: 200),
                                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -295,7 +409,67 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          // Sub-categorii prestator (animat)
+                          AnimatedCrossFade(
+                            duration: const Duration(milliseconds: 300),
+                            crossFadeState: _isProvider 
+                                ? CrossFadeState.showSecond 
+                                : CrossFadeState.showFirst,
+                            firstChild: const SizedBox(height: 16),
+                            secondChild: Column(
+                              children: [
+                                const SizedBox(height: 12),
+                                Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade50,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: Colors.grey.shade200,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.only(left: 12, top: 8, bottom: 4),
+                                        child: Text(
+                                          'Selectează tipul de activitate:',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ),
+                                        // Prestări servicii
+                                        _buildProviderTypeCard(
+                                          type: ProviderType.services,
+                                          icon: Icons.build_circle_outlined,
+                                          title: 'Prestări servicii',
+                                          subtitle: 'Găsește comenzi în zona ta',
+                                          color: const Color(0xFF3B82F6),
+                                          theme: theme,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        // Marketplace
+                                        _buildProviderTypeCard(
+                                          type: ProviderType.marketplace,
+                                          icon: Icons.storefront_outlined,
+                                          title: 'Marketplace',
+                                          subtitle: 'Vinde prin platformă',
+                                          color: const Color(0xFF10B981),
+                                          theme: theme,
+                                        ),
+                                      const SizedBox(height: 8),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                              ],
+                            ),
+                          ),
                           TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,

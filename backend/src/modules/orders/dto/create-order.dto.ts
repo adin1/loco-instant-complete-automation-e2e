@@ -1,5 +1,24 @@
 import { IsInt, IsOptional, IsString, IsNumber, IsIn, IsPositive, IsLatitude, IsLongitude, Min, Length } from 'class-validator';
 
+// Full workflow statuses
+export const ORDER_STATUSES = [
+  'draft',           // Comandă în curs de creare
+  'pending',         // Așteaptă plată/provider
+  'payment_pending', // Așteaptă procesarea plății
+  'funds_held',      // Fonduri blocate în escrow
+  'assigned',        // Provider asignat
+  'provider_en_route', // Provider în drum
+  'in_progress',     // Lucrare în curs
+  'work_completed',  // Marcat finalizat de provider
+  'confirmed',       // Confirmat de client
+  'disputed',        // În dispută
+  'completed',       // Finalizat, bani eliberați
+  'cancelled',       // Anulat
+  'refunded',        // Rambursat
+] as const;
+
+export type OrderStatus = typeof ORDER_STATUSES[number];
+
 export class CreateOrderDto {
   @IsInt()
   @IsPositive()
@@ -14,9 +33,10 @@ export class CreateOrderDto {
   @IsPositive()
   providerId?: number;
 
+  @IsOptional()
   @IsString()
-  @IsIn(['pending','assigned','in_progress','completed','canceled'])
-  status: string;
+  @IsIn(ORDER_STATUSES)
+  status?: string;
 
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
@@ -33,4 +53,16 @@ export class CreateOrderDto {
 
   @IsLongitude()
   originLng: number;
+
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  scheduledFor?: string; // ISO date string
 }

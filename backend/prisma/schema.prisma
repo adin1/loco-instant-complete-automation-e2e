@@ -1,0 +1,339 @@
+// Prisma Schema for LOCO Instant
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== USERS ====================
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  password      String
+  name          String?
+  phone         String?
+  role          UserRole  @default(CLIENT)
+  rating        Float?    @default(0)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  orders        Order[]   @relation("CustomerOrders")
+  providerOrders Order[]  @relation("ProviderOrders")
+  providerDetails ProviderDetails?
+  sentMessages  Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+  reviewsGiven  Review[]  @relation("ReviewsGiven")
+  reviewsReceived Review[] @relation("ReviewsReceived")
+  wallet        Wallet?
+  notifications Notification[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  CLIENT
+  PROVIDER
+  ADMIN
+}
+
+// ==================== PROVIDER DETAILS ====================
+model ProviderDetails {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @unique @map("user_id")
+  skills      String?
+  description String?
+  pricePerHour Float?  @map("price_per_hour")
+  serviceArea String?  @map("service_area")
+  documents   String?
+  status      ProviderStatus @default(PENDING)
+  providerType ProviderType @default(SERVICES) @map("provider_type")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user        User     @relation(fields: [userId], references: [id])
+  services    ProviderService[]
+
+  @@map("prestatori_details")
+}
+
+enum ProviderStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum ProviderType {
+  SERVICES
+  MARKETPLACE
+}
+
+// ==================== SERVICES ====================
+model Service {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  category    String?
+  basePrice   Float?   @map("base_price")
+  tenantId    Int?     @map("tenant_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  providerServices ProviderService[]
+  orders      Order[]
+
+  @@map("services")
+}
+
+model ProviderService {
+  id          Int      @id @default(autoincrement())
+  providerId  Int      @map("provider_id")
+  serviceId   Int      @map("service_id")
+  price       Float?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  provider    ProviderDetails @relation(fields: [providerId], references: [id])
+  service     Service  @relation(fields: [serviceId], references: [id])
+
+  @@map("provider_services")
+}
+
+// ==================== ORDERS (JOBS) ====================
+model Order {
+  id            Int         @id @default(autoincrement())
+  customerId    Int         @map("customer_id")
+  providerId    Int?        @map("provider_id")
+  serviceId     Int?        @map("service_id")
+  title         String?
+  description   String?
+  address       String?
+  scheduledDate DateTime?   @map("scheduled_date")
+  scheduledTime String?     @map("scheduled_time")
+  status        OrderStatus @default(PENDING)
+  priceEstimate Float?      @map("price_estimate")
+  priceFinal    Float?      @map("price_final")
+  currency      String      @default("RON")
+  originLat     Float?      @map("origin_lat")
+  originLng     Float?      @map("origin_lng")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  completedAt   DateTime?   @map("completed_at")
+  confirmedAt   DateTime?   @map("confirmed_at")
+
+  customer      User        @relation("CustomerOrders", fields: [customerId], references: [id])
+  provider      User?       @relation("ProviderOrders", fields: [providerId], references: [id])
+  service       Service?    @relation(fields: [serviceId], references: [id])
+  photos        OrderPhoto[]
+  messages      Message[]
+  payments      Payment[]
+  disputes      Dispute[]
+  reviews       Review[]
+  statusHistory OrderStatusHistory[]
+
+  @@map("orders")
+}
+
+enum OrderStatus {
+  PENDING
+  PAYMENT_PENDING
+  FUNDS_HELD
+  ACCEPTED
+  SCHEDULED
+  PROVIDER_EN_ROUTE
+  IN_PROGRESS
+  WORK_COMPLETED
+  AWAITING_CLIENT_CONFIRMATION
+  CONFIRMED
+  AUTO_CONFIRMED
+  DISPUTED
+  RESOLVED
+  PAID
+  CANCELLED
+  REFUNDED
+}
+
+// ==================== ORDER PHOTOS ====================
+model OrderPhoto {
+  id          Int         @id @default(autoincrement())
+  orderId     Int         @map("order_id")
+  uploaderId  Int         @map("uploader_id")
+  type        PhotoType   @default(OTHER)
+  fileUrl     String      @map("file_url")
+  description String?
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  order       Order       @relation(fields: [orderId], references: [id])
+
+  @@map("order_photos")
+}
+
+enum PhotoType {
+  BEFORE
+  AFTER
+  PROBLEM
+  TEST_PROOF
+  OTHER
+}
+
+// ==================== PAYMENTS ====================
+model Payment {
+  id            Int           @id @default(autoincrement())
+  orderId       Int           @map("order_id")
+  customerId    Int           @map("customer_id")
+  providerId    Int?          @map("provider_id")
+  amount        Float
+  method        String?
+  status        PaymentStatus @default(PENDING)
+  transactionId String?       @map("transaction_id")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  capturedAt    DateTime?     @map("captured_at")
+  releasedAt    DateTime?     @map("released_at")
+
+  order         Order         @relation(fields: [orderId], references: [id])
+
+  @@map("payments")
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  BLOCKED
+  CAPTURED
+  RELEASED
+  REFUNDED
+  FAILED
+}
+
+// ==================== DISPUTES ====================
+model Dispute {
+  id          Int           @id @default(autoincrement())
+  orderId     Int           @map("order_id")
+  clientId    Int           @map("client_id")
+  providerId  Int           @map("provider_id")
+  description String
+  photoUrl    String?       @map("photo_url")
+  status      DisputeStatus @default(OPEN)
+  resolution  String?
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  resolvedAt  DateTime?     @map("resolved_at")
+
+  order       Order         @relation(fields: [orderId], references: [id])
+
+  @@map("disputes")
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  REVISIT_SCHEDULED
+  RESOLVED_CLIENT_FAVOR
+  RESOLVED_PROVIDER_FAVOR
+  CLOSED
+}
+
+// ==================== MESSAGES ====================
+model Message {
+  id          Int       @id @default(autoincrement())
+  orderId     Int       @map("order_id")
+  senderId    Int       @map("sender_id")
+  receiverId  Int       @map("receiver_id")
+  message     String
+  isRead      Boolean   @default(false) @map("is_read")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  order       Order     @relation(fields: [orderId], references: [id])
+  sender      User      @relation("SentMessages", fields: [senderId], references: [id])
+  receiver    User      @relation("ReceivedMessages", fields: [receiverId], references: [id])
+
+  @@map("messages")
+}
+
+// ==================== REVIEWS ====================
+model Review {
+  id          Int       @id @default(autoincrement())
+  orderId     Int       @map("order_id")
+  fromUserId  Int       @map("from_user_id")
+  toUserId    Int       @map("to_user_id")
+  rating      Int
+  comment     String?
+  response    String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  order       Order     @relation(fields: [orderId], references: [id])
+  fromUser    User      @relation("ReviewsGiven", fields: [fromUserId], references: [id])
+  toUser      User      @relation("ReviewsReceived", fields: [toUserId], references: [id])
+
+  @@map("reviews")
+}
+
+// ==================== WALLET ====================
+model Wallet {
+  id          Int       @id @default(autoincrement())
+  userId      Int       @unique @map("user_id")
+  balance     Float     @default(0)
+  currency    String    @default("RON")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user        User      @relation(fields: [userId], references: [id])
+  withdrawals Withdrawal[]
+
+  @@map("wallets")
+}
+
+model Withdrawal {
+  id          Int              @id @default(autoincrement())
+  walletId    Int              @map("wallet_id")
+  amount      Float
+  bankAccount String?          @map("bank_account")
+  status      WithdrawalStatus @default(PENDING)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  processedAt DateTime?        @map("processed_at")
+
+  wallet      Wallet           @relation(fields: [walletId], references: [id])
+
+  @@map("withdrawals")
+}
+
+enum WithdrawalStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// ==================== ORDER STATUS HISTORY ====================
+model OrderStatusHistory {
+  id        Int         @id @default(autoincrement())
+  orderId   Int         @map("order_id")
+  status    OrderStatus
+  notes     String?
+  createdAt DateTime    @default(now()) @map("created_at")
+
+  order     Order       @relation(fields: [orderId], references: [id])
+
+  @@map("order_status_history")
+}
+
+// ==================== NOTIFICATIONS ====================
+model Notification {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  title     String
+  message   String
+  type      String?
+  isRead    Boolean   @default(false) @map("is_read")
+  data      Json?
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
