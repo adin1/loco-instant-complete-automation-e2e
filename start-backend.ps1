@@ -11,7 +11,7 @@ if (-not (Test-Path $backendPath)) {
 
 if (-not $NoDocker) {
   Write-Host "Starting local infra (Postgres, Redis, OpenSearch) via docker-compose..." -ForegroundColor Cyan
-  cd $backendPath
+  Set-Location $backendPath
   docker-compose -f docker-compose.local.yml up -d
 }
 

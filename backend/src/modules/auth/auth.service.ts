@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
@@ -11,7 +11,7 @@ export class AuthService {
   async register(email: string, password: string, name?: string) {
     const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing) {
-      throw new Error('User already exists');
+      throw new ConflictException('User already exists');
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -37,7 +37,7 @@ export class AuthService {
   async validateUser(email: string, password: string) {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) {
-      throw new Error('User not found');
+      throw new UnauthorizedException('Email sau parolă incorectă');
     }
 
     // Verifică parola cu bcrypt
@@ -56,7 +56,7 @@ export class AuthService {
       }
     }
 
-    throw new Error('Invalid password');
+    throw new UnauthorizedException('Email sau parolă incorectă');
   }
 
   // Helper pentru a converti user la format serializabil
@@ -110,7 +110,11 @@ export class AuthService {
         }
       }
 
-      throw error;
+      // Re-throw UnauthorizedException as-is, wrap other errors
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new UnauthorizedException('Email sau parolă incorectă');
     }
   }
 }

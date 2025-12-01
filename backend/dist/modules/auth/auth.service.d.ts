@@ -7,16 +7,16 @@ export declare class AuthService {
         role: string;
     }>;
     validateUser(email: string, password: string): Promise<{
-        name: string | null;
-        password: string | null;
         id: bigint;
         role: string;
-        tenant_id: bigint;
         phone_e164: string | null;
         email: string | null;
         password_hash: string | null;
         createdAt: Date;
         updatedAt: Date;
+        password: string | null;
+        name: string | null;
+        tenant_id: bigint;
     }>;
     private serializeUser;
     login(email: string, password: string): Promise<{

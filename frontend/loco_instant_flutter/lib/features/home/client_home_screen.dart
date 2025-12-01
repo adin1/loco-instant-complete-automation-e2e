@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 
 class ClientHomeScreen extends ConsumerStatefulWidget {
   const ClientHomeScreen({super.key});
@@ -26,58 +27,90 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
   Timer? _marketplaceScrollTimer;
   String? _selectedCategory;
   String? _selectedSubcategory;
+  bool _isGettingLocation = false;
+  bool _showLocationSuggestions = false;
+  String _currentLocationText = 'Cluj-Napoca';
+  
+  // Lista de sugestii pentru căutare
+  final List<String> _locationSuggestions = [
+    '📍 Locația mea actuală',
+    'Str. Memorandumului, Cluj-Napoca',
+    'Str. Eroilor, Cluj-Napoca', 
+    'Piața Unirii, Cluj-Napoca',
+    'Str. Horea, Cluj-Napoca',
+    'Mărăști, Cluj-Napoca',
+    'Gheorgheni, Cluj-Napoca',
+    'Mănăștur, Cluj-Napoca',
+  ];
 
   // Cluj-Napoca coordinates (current user location simulation)
-  static const LatLng _userLocation = LatLng(46.770439, 23.591423);
+  LatLng _userLocation = const LatLng(46.770439, 23.591423);
 
-  // Categorii cu subcategorii
+  // Categorii ordonate după urgență și popularitate în orașe mari
   final List<Map<String, dynamic>> _categories = [
-    {
-      'icon': Icons.electrical_services,
-      'name': 'Electrician',
-      'subcategories': ['Instalații electrice', 'Reparații prize', 'Tablouri electrice', 'Verificări PRAM', 'Iluminat LED'],
-    },
     {
       'icon': Icons.plumbing,
       'name': 'Instalator',
-      'subcategories': ['Instalații sanitare', 'Desfundare canalizare', 'Montaj centrale', 'Reparații țevi', 'Instalare boiler'],
+      'urgent': true,
+      'subcategories': ['Urgență - scurgeri apă', 'Desfundare canalizare', 'Instalații sanitare', 'Montaj centrale termice', 'Reparații țevi', 'Instalare boiler'],
+    },
+    {
+      'icon': Icons.electrical_services,
+      'name': 'Electrician',
+      'urgent': true,
+      'subcategories': ['Urgență - pană curent', 'Reparații prize/întrerupătoare', 'Tablouri electrice', 'Instalații electrice', 'Verificări PRAM', 'Iluminat LED'],
+    },
+    {
+      'icon': Icons.lock,
+      'name': 'Lăcătuș',
+      'urgent': true,
+      'subcategories': ['Deblocare ușă - URGENȚĂ', 'Schimbare yală', 'Montaj încuietori', 'Copiere chei', 'Blindare uși'],
+    },
+    {
+      'icon': Icons.local_shipping,
+      'name': 'Transport & Mutări',
+      'urgent': false,
+      'subcategories': ['Mutări apartamente', 'Transport marfă', 'Transport mobilă', 'Curierat local', 'Transport materiale construcții'],
     },
     {
       'icon': Icons.cleaning_services,
       'name': 'Curățenie',
+      'urgent': false,
       'subcategories': ['Curățenie generală', 'Curățenie după constructor', 'Curățenie birouri', 'Spălat geamuri', 'Dezinfecție'],
     },
     {
       'icon': Icons.handyman,
-      'name': 'Reparații',
-      'subcategories': ['Reparații mobilă', 'Montaj mobilier', 'Reparații uși', 'Reparații diverse', 'Asamblare IKEA'],
+      'name': 'Reparații casă',
+      'urgent': false,
+      'subcategories': ['Reparații mobilă', 'Montaj mobilier IKEA', 'Reparații uși/ferestre', 'Montaj corpuri suspendate', 'Reparații diverse'],
     },
     {
-      'icon': Icons.local_shipping,
-      'name': 'Transport',
-      'subcategories': ['Transport marfă', 'Mutări apartamente', 'Transport mobilă', 'Curierat local', 'Transport materiale'],
-    },
-    {
-      'icon': Icons.yard,
-      'name': 'Grădinărit',
-      'subcategories': ['Tuns gazon', 'Întreținere grădină', 'Tăiat copaci', 'Plantat flori', 'Sistem irigații'],
+      'icon': Icons.hvac,
+      'name': 'Aer condiționat',
+      'urgent': true,
+      'subcategories': ['Montaj AC', 'Curățare/igienizare AC', 'Reparații AC', 'Încărcare freon', 'Demontare AC'],
     },
     {
       'icon': Icons.brush,
       'name': 'Zugrăveli',
+      'urgent': false,
       'subcategories': ['Zugrăvit interior', 'Zugrăvit exterior', 'Vopsit lavabil', 'Tencuieli decorative', 'Glet și șlefuit'],
-    },
-    {
-      'icon': Icons.roofing,
-      'name': 'Acoperiș',
-      'subcategories': ['Reparații acoperiș', 'Montaj țiglă', 'Hidroizolații', 'Jgheaburi și burlane', 'Mansardări'],
     },
     {
       'icon': Icons.computer,
       'name': 'IT & Tech',
-      'subcategories': ['Reparații PC', 'Instalare software', 'Configurare rețea', 'Recuperare date', 'Service laptop'],
+      'urgent': false,
+      'subcategories': ['Reparații PC/Laptop', 'Instalare software', 'Configurare rețea WiFi', 'Recuperare date', 'Service imprimante'],
+    },
+    {
+      'icon': Icons.roofing,
+      'name': 'Acoperiș',
+      'urgent': false,
+      'subcategories': ['Reparații acoperiș', 'Montaj țiglă', 'Hidroizolații', 'Jgheaburi și burlane', 'Mansardări'],
     },
   ];
+  
+  int? _clickedCategoryIndex; // Pentru a ține submeniul deschis la click
 
   // Prestatori cu coordonate pentru distanță
   final List<Map<String, dynamic>> _allProviders = [
@@ -170,6 +203,115 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     _marketplaceScrollTimer?.cancel();
     _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  // Obține locația curentă
+  Future<void> _getCurrentLocation() async {
+    setState(() => _isGettingLocation = true);
+    
+    try {
+      // Verifică dacă serviciile de localizare sunt activate
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Activează serviciile de localizare'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Verifică și cere permisiunea
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Permisiunea pentru locație a fost refuzată'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
+      }
+
+      // Obține poziția
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      setState(() {
+        _userLocation = LatLng(position.latitude, position.longitude);
+        _currentLocationText = 'Locația mea (${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)})';
+        _searchController.text = '📍 Locația mea actuală';
+        _showLocationSuggestions = false;
+      });
+
+      // Mută harta la noua locație
+      final controller = await _mapController.future;
+      controller.animateCamera(CameraUpdate.newLatLng(_userLocation));
+
+      // Caută prestatori în apropiere
+      _searchNearbyProviders();
+
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Eroare la obținerea locației: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isGettingLocation = false);
+      }
+    }
+  }
+
+  // Caută prestatori în apropiere de locația curentă
+  void _searchNearbyProviders() {
+    // Sortează prestatorii după distanță
+    _allProviders.sort((a, b) => (a['distance'] as double).compareTo(b['distance'] as double));
+    
+    setState(() {
+      _currentProviderPage = 0;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: 8),
+            Text('${_allProviders.length} prestatori găsiți în apropiere'),
+          ],
+        ),
+        backgroundColor: const Color(0xFF2DD4BF),
+      ),
+    );
+  }
+
+  // Selectează o sugestie de locație
+  void _selectLocationSuggestion(String suggestion) {
+    setState(() {
+      _searchController.text = suggestion;
+      _showLocationSuggestions = false;
+    });
+
+    if (suggestion.contains('Locația mea')) {
+      _getCurrentLocation();
+    } else {
+      // Pentru străzi, căutăm prestatorii
+      _searchNearbyProviders();
+    }
   }
 
   void _startMarketplaceAutoScroll() {
@@ -336,11 +478,21 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      body: Column(
+      body: Stack(
         children: [
-          _buildHeader(),
-          Expanded(
-            child: isMobile ? _buildMobileLayout() : _buildDesktopLayout(),
+          Column(
+            children: [
+              _buildHeader(),
+              Expanded(
+                child: isMobile ? _buildMobileLayout() : _buildDesktopLayout(),
+              ),
+            ],
+          ),
+          // Badge "Susține producătorii locali" - fix în colțul din dreapta jos
+          Positioned(
+            bottom: 20,
+            right: 20,
+            child: _buildSupportLocalBadge(),
           ),
         ],
       ),
@@ -411,59 +563,236 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
           _buildLogo(iconSize: 32, fontSize: 18),
           const SizedBox(width: 32),
           Expanded(
-            child: Container(
-              height: 48,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Row(
-                children: [
-                  const SizedBox(width: 16),
-                  const Icon(Icons.search, color: Colors.white70, size: 22),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      focusNode: _searchFocusNode,
-                      style: const TextStyle(color: Colors.white, fontSize: 15),
-                      decoration: const InputDecoration(
-                        hintText: 'Caută servicii sau prestatori...',
-                        hintStyle: TextStyle(color: Colors.white60, fontSize: 15),
-                        border: InputBorder.none,
-                      ),
-                      onSubmitted: (_) => _searchProvider(),
-                    ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(24),
                   ),
-                  GestureDetector(
-                    onTap: _searchProvider,
-                    child: Container(
-                      margin: const EdgeInsets.all(4),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        'Căutare',
-                        style: TextStyle(
-                          color: Color(0xFF1565C0),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
+                  child: Row(
+                    children: [
+                      // Buton locație
+                      GestureDetector(
+                        onTap: _isGettingLocation ? null : _getCurrentLocation,
+                        child: Container(
+                          margin: const EdgeInsets.only(left: 4),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: _isGettingLocation
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Icons.my_location, color: Colors.white, size: 20),
                         ),
                       ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          focusNode: _searchFocusNode,
+                          style: const TextStyle(color: Colors.white, fontSize: 15),
+                          decoration: const InputDecoration(
+                            hintText: 'Caută serviciu sau introdu adresa...',
+                            hintStyle: TextStyle(color: Colors.white60, fontSize: 15),
+                            border: InputBorder.none,
+                          ),
+                          onTap: () => setState(() => _showLocationSuggestions = true),
+                          onChanged: (value) {
+                            setState(() => _showLocationSuggestions = value.isNotEmpty);
+                          },
+                          onSubmitted: (_) {
+                            setState(() => _showLocationSuggestions = false);
+                            _searchProvider();
+                          },
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() => _showLocationSuggestions = false);
+                          _searchProvider();
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.all(4),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.search, color: Color(0xFF1565C0), size: 18),
+                              SizedBox(width: 6),
+                              Text(
+                                'Caută',
+                                style: TextStyle(
+                                  color: Color(0xFF1565C0),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 24),
+          _buildHeaderButton(Icons.person_outline, 'Cont', () => _showUserMenu(context)),
+          const SizedBox(width: 16),
+          _buildHeaderButton(Icons.history, 'Comenzi', () => context.go('/orders')),
+        ],
+      ),
+    );
+  }
+  
+  // Meniu complet pentru utilizator
+  void _showUserMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Avatar și info user
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor: const Color(0xFF2DD4BF),
+                    child: const Icon(Icons.person, color: Colors.white, size: 32),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Utilizator conectat',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'client@test.ro',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-          const SizedBox(width: 24),
-          _buildHeaderButton(Icons.person_outline, 'Cont', () => context.go('/profile')),
-          const SizedBox(width: 16),
-          _buildHeaderButton(Icons.history, 'Comenzi', () => context.go('/orders')),
-        ],
+            const SizedBox(height: 20),
+            const Divider(),
+            _buildMenuItem(Icons.person_outline, 'Profilul meu', () {
+              Navigator.pop(context);
+              context.go('/profile');
+            }),
+            _buildMenuItem(Icons.history, 'Istoricul comenzilor', () {
+              Navigator.pop(context);
+              context.go('/orders');
+            }),
+            _buildMenuItem(Icons.favorite_border, 'Prestatori favoriți', () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Funcție în dezvoltare')),
+              );
+            }),
+            _buildMenuItem(Icons.location_on_outlined, 'Adresele mele', () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Funcție în dezvoltare')),
+              );
+            }),
+            _buildMenuItem(Icons.payment, 'Metode de plată', () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Funcție în dezvoltare')),
+              );
+            }),
+            _buildMenuItem(Icons.notifications_outlined, 'Notificări', () {
+              Navigator.pop(context);
+              context.go('/notifications');
+            }),
+            _buildMenuItem(Icons.settings_outlined, 'Setări', () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Funcție în dezvoltare')),
+              );
+            }),
+            _buildMenuItem(Icons.help_outline, 'Ajutor & Suport', () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Funcție în dezvoltare')),
+              );
+            }),
+            const Divider(),
+            _buildMenuItem(Icons.logout, 'Deconectare', () {
+              Navigator.pop(context);
+              context.go('/login');
+            }, isDestructive: true),
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildMenuItem(IconData icon, String title, VoidCallback onTap, {bool isDestructive = false}) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: isDestructive ? Colors.red : Colors.grey.shade700,
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontSize: 16,
+          color: isDestructive ? Colors.red : Colors.black87,
+        ),
+      ),
+      trailing: Icon(
+        Icons.chevron_right,
+        color: Colors.grey.shade400,
+      ),
+      onTap: onTap,
     );
   }
 
@@ -482,8 +811,18 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
 
   // ==================== DESKTOP LAYOUT ====================
   Widget _buildDesktopLayout() {
+    final activeIndex = _clickedCategoryIndex ?? _hoveredCategoryIndex;
+    
     return Stack(
       children: [
+        // Overlay pentru a închide sugestiile când dai click în afară
+        if (_showLocationSuggestions)
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: () => setState(() => _showLocationSuggestions = false),
+              child: Container(color: Colors.transparent),
+            ),
+          ),
         Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1400),
@@ -503,14 +842,85 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
           ),
         ),
         
-        // Subcategories overlay
-        if (_hoveredCategoryIndex != null)
+        // Subcategories overlay - rămâne deschis la click
+        if (activeIndex != null)
           Positioned(
             left: 280,
-            top: 100 + (_hoveredCategoryIndex! * 52.0),
+            top: 100 + (activeIndex * 52.0),
             child: _buildSubmenuOverlay(),
           ),
+          
+        // Location suggestions dropdown
+        if (_showLocationSuggestions)
+          Positioned(
+            top: 70,
+            left: MediaQuery.of(context).size.width * 0.25,
+            right: MediaQuery.of(context).size.width * 0.25,
+            child: _buildLocationSuggestions(),
+          ),
       ],
+    );
+  }
+  
+  Widget _buildLocationSuggestions() {
+    final query = _searchController.text.toLowerCase();
+    final filteredSuggestions = _locationSuggestions.where((s) =>
+      query.isEmpty || s.toLowerCase().contains(query)
+    ).toList();
+    
+    return Material(
+      elevation: 8,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        constraints: const BoxConstraints(maxHeight: 300),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.tips_and_updates, color: Colors.grey.shade600, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Sugestii de locație',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ...filteredSuggestions.map((suggestion) => ListTile(
+                leading: Icon(
+                  suggestion.contains('Locația mea') ? Icons.my_location : Icons.location_on_outlined,
+                  color: suggestion.contains('Locația mea') ? const Color(0xFF2DD4BF) : Colors.grey.shade600,
+                ),
+                title: Text(
+                  suggestion,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: suggestion.contains('Locația mea') ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                ),
+                onTap: () => _selectLocationSuggestion(suggestion),
+              )),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -522,39 +932,81 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 16)],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Logo în sidebar
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF1565C0), Color(0xFF2DD4BF)],
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header "Categorii"
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF1565C0), Color(0xFF2DD4BF)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.category, color: Colors.white, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Categorii',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                    if (_clickedCategoryIndex != null)
+                      GestureDetector(
+                        onTap: () => setState(() => _clickedCategoryIndex = null),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Icon(Icons.close, color: Colors.white, size: 18),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            ),
-            child: Center(child: _buildLogo(iconSize: 28, fontSize: 16)),
+              
+              // Categories list
+              ...List.generate(_categories.length, (index) => _buildCategoryItem(index)),
+            ],
           ),
-          
-          // Categories list
-          ...List.generate(_categories.length, (index) => _buildCategoryItem(index)),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildCategoryItem(int index) {
     final category = _categories[index];
+    final isSelected = _clickedCategoryIndex == index;
     final isHovered = _hoveredCategoryIndex == index;
+    final isActive = isSelected || isHovered;
+    final isUrgent = category['urgent'] == true;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hoveredCategoryIndex = index),
       onExit: (_) {
         Future.delayed(const Duration(milliseconds: 100), () {
-          if (_hoveredSubcategoryIndex == null && mounted) {
+          if (mounted && _clickedCategoryIndex != index) {
             setState(() => _hoveredCategoryIndex = null);
           }
         });
@@ -562,13 +1014,15 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
       child: GestureDetector(
         onTap: () {
           setState(() {
-            _hoveredCategoryIndex = _hoveredCategoryIndex == index ? null : index;
+            // La click, păstrăm submeniul deschis
+            _clickedCategoryIndex = _clickedCategoryIndex == index ? null : index;
+            _hoveredCategoryIndex = _clickedCategoryIndex;
           });
         },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: isHovered ? const Color(0xFFF0F9FF) : Colors.white,
+            color: isActive ? const Color(0xFFF0F9FF) : Colors.white,
             border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
           ),
           child: Row(
@@ -577,30 +1031,52 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: isHovered ? const Color(0xFF2DD4BF) : Colors.grey.shade100,
+                  color: isActive ? const Color(0xFF2DD4BF) : Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   category['icon'],
                   size: 20,
-                  color: isHovered ? Colors.white : Colors.grey.shade600,
+                  color: isActive ? Colors.white : Colors.grey.shade600,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  category['name'],
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: isHovered ? const Color(0xFF1565C0) : const Color(0xFF333333),
-                  ),
+                child: Row(
+                  children: [
+                    Text(
+                      category['name'],
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: isActive ? const Color(0xFF1565C0) : const Color(0xFF333333),
+                      ),
+                    ),
+                    if (isUrgent) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '24/7',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red.shade700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               Icon(
-                Icons.chevron_right,
+                isSelected ? Icons.expand_less : Icons.chevron_right,
                 size: 20,
-                color: isHovered ? const Color(0xFF2DD4BF) : Colors.grey.shade400,
+                color: isActive ? const Color(0xFF2DD4BF) : Colors.grey.shade400,
               ),
             ],
           ),
@@ -610,21 +1086,25 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
   }
 
   Widget _buildSubmenuOverlay() {
-    if (_hoveredCategoryIndex == null) return const SizedBox.shrink();
+    final activeIndex = _clickedCategoryIndex ?? _hoveredCategoryIndex;
+    if (activeIndex == null) return const SizedBox.shrink();
     
-    final category = _categories[_hoveredCategoryIndex!];
+    final category = _categories[activeIndex];
     final subcategories = category['subcategories'] as List<String>;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hoveredSubcategoryIndex = 0),
       onExit: (_) {
-        setState(() {
-          _hoveredSubcategoryIndex = null;
-          _hoveredCategoryIndex = null;
-        });
+        // Nu închidem submeniul dacă e selectat prin click
+        if (_clickedCategoryIndex == null) {
+          setState(() {
+            _hoveredSubcategoryIndex = null;
+            _hoveredCategoryIndex = null;
+          });
+        }
       },
       child: Container(
-        width: 260,
+        width: 280,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -709,10 +1189,68 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
       child: Column(
         children: [
           _buildGoogleMap(),
-          const SizedBox(height: 20),
-          _buildSearchBar(),
           const SizedBox(height: 24),
           _buildProvidersSection(),
+        ],
+      ),
+    );
+  }
+
+  // ==================== SUPPORT LOCAL BADGE ====================
+  Widget _buildSupportLocalBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF10B981), Color(0xFF059669)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF10B981).withOpacity(0.4),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.eco, color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 12),
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Produse de casă',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 0.3,
+                ),
+              ),
+              SizedBox(height: 2),
+              Text(
+                'Susține producătorii locali!',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white70,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -729,11 +1267,12 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
       child: Stack(
         children: [
           GoogleMap(
-            initialCameraPosition: const CameraPosition(
+            initialCameraPosition: CameraPosition(
               target: _userLocation,
               zoom: 14,
             ),
-            myLocationEnabled: false,
+            myLocationEnabled: true,
+            myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
             mapToolbarEnabled: false,
             onMapCreated: (controller) {
@@ -742,10 +1281,11 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
               }
             },
             markers: {
-              const Marker(
-                markerId: MarkerId('user'),
+              Marker(
+                markerId: const MarkerId('user'),
                 position: _userLocation,
-                infoWindow: InfoWindow(title: 'Tu ești aici'),
+                infoWindow: const InfoWindow(title: 'Tu ești aici'),
+                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
               ),
             },
           ),
@@ -1159,12 +1699,10 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
   // ==================== MOBILE LAYOUT ====================
   Widget _buildMobileLayout() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 80),
       child: Column(
         children: [
           _buildGoogleMap(),
-          const SizedBox(height: 20),
-          _buildSearchBar(),
           const SizedBox(height: 24),
           _buildProvidersSection(),
           const SizedBox(height: 28),

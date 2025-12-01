@@ -18,7 +18,7 @@ let AuthService = class AuthService {
     async register(email, password, name) {
         const existing = await this.prisma.user.findUnique({ where: { email } });
         if (existing) {
-            throw new Error('User already exists');
+            throw new common_1.ConflictException('User already exists');
         }
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = await this.prisma.user.create({
@@ -40,7 +40,7 @@ let AuthService = class AuthService {
     async validateUser(email, password) {
         const user = await this.prisma.user.findUnique({ where: { email } });
         if (!user) {
-            throw new Error('User not found');
+            throw new common_1.UnauthorizedException('Email sau parolă incorectă');
         }
         if (user.password) {
             const isMatch = await bcrypt.compare(password, user.password);
@@ -54,7 +54,7 @@ let AuthService = class AuthService {
                 return user;
             }
         }
-        throw new Error('Invalid password');
+        throw new common_1.UnauthorizedException('Email sau parolă incorectă');
     }
     serializeUser(user) {
         return {
@@ -89,7 +89,10 @@ let AuthService = class AuthService {
                     };
                 }
             }
-            throw error;
+            if (error instanceof common_1.UnauthorizedException) {
+                throw error;
+            }
+            throw new common_1.UnauthorizedException('Email sau parolă incorectă');
         }
     }
 };
