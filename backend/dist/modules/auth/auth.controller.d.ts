@@ -8,14 +8,15 @@ export declare class AuthController {
         name?: string;
     }): Promise<{
         name: string | null;
-        id: number;
-        email: string;
-        password: string;
-        phone: string | null;
-        role: import(".prisma/client").$Enums.UserRole;
-        rating: number | null;
+        id: bigint;
+        tenant_id: bigint;
+        role: string;
+        phone_e164: string | null;
+        email: string | null;
+        password_hash: string | null;
         createdAt: Date;
         updatedAt: Date;
+        password: string | null;
     }>;
     login(body: {
         email: string;

@@ -1,4 +1,3 @@
-// Prisma Schema for LOCO Instant
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,332 +7,578 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ==================== USERS ====================
 model User {
-  id            Int       @id @default(autoincrement())
-  email         String    @unique
-  password      String
-  name          String?
-  phone         String?
-  role          UserRole  @default(CLIENT)
-  rating        Float?    @default(0)
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  id                                          BigInt               @id @default(autoincrement())
+  tenant_id                                   BigInt
+  role                                        String
+  phone_e164                                  String?              @unique
+  email                                       String?              @unique @db.Citext
+  password_hash                               String?
+  createdAt                                   DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                                   DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  password                                    String?              @default("demo123") @db.VarChar(255)
+  name                                        String?              @default("User") @db.VarChar(255)
+  disputes_disputes_filed_byTousers           Dispute[]            @relation("disputes_filed_byTousers")
+  disputes_disputes_resolved_byTousers        Dispute[]            @relation("disputes_resolved_byTousers")
+  job_photos                                  job_photos[]
+  job_status_history                          job_status_history[]
+  jobs_jobs_cancelled_byTousers               jobs[]               @relation("jobs_cancelled_byTousers")
+  jobs_jobs_client_idTousers                  jobs[]               @relation("jobs_client_idTousers")
+  jobs_jobs_prestator_idTousers               jobs[]               @relation("jobs_prestator_idTousers")
+  receivedMessages                            Message[]            @relation("ReceivedMessages")
+  sentMessages                                Message[]            @relation("SentMessages")
+  notifications                               Notification[]
+  order_evidence                              order_evidence[]
+  order_status_history                        OrderStatusHistory[]
+  orders                                      Order[]              @relation("CustomerOrders")
+  payments                                    Payment[]
+  providerDetails                             ProviderDetails?
+  providers                                   providers?
+  reviewsGiven                                Review[]             @relation("ReviewsGiven")
+  reviewsReceived                             Review[]             @relation("ReviewsReceived")
+  user_blocks_user_blocks_blocked_idTousers   user_blocks[]        @relation("user_blocks_blocked_idTousers")
+  user_blocks_user_blocks_blocker_idTousers   user_blocks[]        @relation("user_blocks_blocker_idTousers")
+  user_ratings_user_ratings_rated_idTousers   user_ratings[]       @relation("user_ratings_rated_idTousers")
+  user_ratings_user_ratings_rater_idTousers   user_ratings[]       @relation("user_ratings_rater_idTousers")
+  tenants                                     tenants              @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  wallet                                      wallet?
+  withdrawals_withdrawals_prestator_idTousers Withdrawal[]         @relation("withdrawals_prestator_idTousers")
+  withdrawals_withdrawals_processed_byTousers Withdrawal[]         @relation("withdrawals_processed_byTousers")
 
-  // Relations
-  orders        Order[]   @relation("CustomerOrders")
-  providerOrders Order[]  @relation("ProviderOrders")
-  providerDetails ProviderDetails?
-  sentMessages  Message[] @relation("SentMessages")
-  receivedMessages Message[] @relation("ReceivedMessages")
-  reviewsGiven  Review[]  @relation("ReviewsGiven")
-  reviewsReceived Review[] @relation("ReviewsReceived")
-  wallet        Wallet?
-  notifications Notification[]
-
+  @@index([email], map: "idx_users_email")
+  @@index([role], map: "idx_users_role")
   @@map("users")
 }
 
-enum UserRole {
-  CLIENT
-  PROVIDER
-  ADMIN
-}
-
-// ==================== PROVIDER DETAILS ====================
 model ProviderDetails {
-  id          Int      @id @default(autoincrement())
-  userId      Int      @unique @map("user_id")
-  skills      String?
-  description String?
-  pricePerHour Float?  @map("price_per_hour")
-  serviceArea String?  @map("service_area")
-  documents   String?
-  status      ProviderStatus @default(PENDING)
-  providerType ProviderType @default(SERVICES) @map("provider_type")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id                 BigInt               @id @default(autoincrement())
+  userId             BigInt               @unique @map("user_id")
+  skills             String[]             @default([])
+  description        String?
+  bio                String?
+  pricePerHour       Decimal?             @map("price_per_hour") @db.Decimal(10, 2)
+  min_order_price    Decimal?             @default(50) @db.Decimal(10, 2)
+  currency           String?              @default("RON")
+  serviceArea        String?              @map("service_area")
+  service_radius_km  Int?                 @default(20)
+  location_lat       Decimal?             @db.Decimal(10, 7)
+  location_lng       Decimal?             @db.Decimal(10, 7)
+  documents          Json?                @default("{}")
+  id_verified        Boolean?             @default(false)
+  background_check   Boolean?             @default(false)
+  is_available       Boolean?             @default(true)
+  working_hours      Json?                @default("{}")
+  status             String?              @default("pending")
+  approved_at        DateTime?            @db.Timestamptz(6)
+  createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  prestator_services prestator_services[]
+  user               User                 @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  user        User     @relation(fields: [userId], references: [id])
-  services    ProviderService[]
-
+  @@index([skills], map: "idx_prestatori_skills", type: Gin)
+  @@index([status], map: "idx_prestatori_status")
   @@map("prestatori_details")
 }
 
-enum ProviderStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  SUSPENDED
-}
-
-enum ProviderType {
-  SERVICES
-  MARKETPLACE
-}
-
-// ==================== SERVICES ====================
 model Service {
-  id          Int      @id @default(autoincrement())
-  name        String
-  description String?
-  category    String?
-  basePrice   Float?   @map("base_price")
-  tenantId    Int?     @map("tenant_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  providerServices ProviderService[]
-  orders      Order[]
+  id                 BigInt               @id @default(autoincrement())
+  tenantId           BigInt               @map("tenant_id")
+  slug               String               @unique
+  name               String
+  jobs               jobs[]
+  orders             Order[]
+  prestator_services prestator_services[]
+  providerServices   ProviderService[]
+  tenants            tenants              @relation(fields: [tenantId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("services")
 }
 
 model ProviderService {
-  id          Int      @id @default(autoincrement())
-  providerId  Int      @map("provider_id")
-  serviceId   Int      @map("service_id")
-  price       Float?
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
+  providerId BigInt    @map("provider_id")
+  serviceId  BigInt    @map("service_id")
+  base_price Decimal?  @db.Decimal(10, 2)
+  currency   String?   @default("RON")
+  provider   providers @relation(fields: [providerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  service    Service   @relation(fields: [serviceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  provider    ProviderDetails @relation(fields: [providerId], references: [id])
-  service     Service  @relation(fields: [serviceId], references: [id])
-
+  @@id([providerId, serviceId])
   @@map("provider_services")
 }
 
-// ==================== ORDERS (JOBS) ====================
 model Order {
-  id            Int         @id @default(autoincrement())
-  customerId    Int         @map("customer_id")
-  providerId    Int?        @map("provider_id")
-  serviceId     Int?        @map("service_id")
-  title         String?
-  description   String?
-  address       String?
-  scheduledDate DateTime?   @map("scheduled_date")
-  scheduledTime String?     @map("scheduled_time")
-  status        OrderStatus @default(PENDING)
-  priceEstimate Float?      @map("price_estimate")
-  priceFinal    Float?      @map("price_final")
-  currency      String      @default("RON")
-  originLat     Float?      @map("origin_lat")
-  originLng     Float?      @map("origin_lng")
-  createdAt     DateTime    @default(now()) @map("created_at")
-  updatedAt     DateTime    @updatedAt @map("updated_at")
-  completedAt   DateTime?   @map("completed_at")
-  confirmedAt   DateTime?   @map("confirmed_at")
+  id             BigInt               @id @default(autoincrement())
+  tenant_id      BigInt               @default(1)
+  customerId     BigInt               @map("customer_id")
+  providerId     BigInt?              @map("provider_id")
+  serviceId      BigInt?              @map("service_id")
+  status         String               @default("pending")
+  priceEstimate  Decimal?             @map("price_estimate") @db.Decimal(10, 2)
+  currency       String?              @default("RON")
+  originLat      Decimal?             @map("origin_lat") @db.Decimal(10, 7)
+  originLng      Decimal?             @map("origin_lng") @db.Decimal(10, 7)
+  address        String?
+  description    String?
+  scheduled_for  DateTime?            @db.Timestamptz(6)
+  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  chat_messages  chat_messages[]
+  disputes       Dispute[]
+  order_evidence order_evidence[]
+  statusHistory  OrderStatusHistory[]
+  customer       User                 @relation("CustomerOrders", fields: [customerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  provider       providers?           @relation("ProviderOrders", fields: [providerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  service        Service?             @relation(fields: [serviceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tenants        tenants              @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  payments       Payment[]
+  user_ratings   user_ratings[]
 
-  customer      User        @relation("CustomerOrders", fields: [customerId], references: [id])
-  provider      User?       @relation("ProviderOrders", fields: [providerId], references: [id])
-  service       Service?    @relation(fields: [serviceId], references: [id])
-  photos        OrderPhoto[]
-  messages      Message[]
-  payments      Payment[]
-  disputes      Dispute[]
-  reviews       Review[]
-  statusHistory OrderStatusHistory[]
-
+  @@index([customerId], map: "idx_orders_customer")
+  @@index([providerId], map: "idx_orders_provider")
+  @@index([status], map: "idx_orders_status")
   @@map("orders")
 }
 
-enum OrderStatus {
-  PENDING
-  PAYMENT_PENDING
-  FUNDS_HELD
-  ACCEPTED
-  SCHEDULED
-  PROVIDER_EN_ROUTE
-  IN_PROGRESS
-  WORK_COMPLETED
-  AWAITING_CLIENT_CONFIRMATION
-  CONFIRMED
-  AUTO_CONFIRMED
-  DISPUTED
-  RESOLVED
-  PAID
-  CANCELLED
-  REFUNDED
-}
-
-// ==================== ORDER PHOTOS ====================
-model OrderPhoto {
-  id          Int         @id @default(autoincrement())
-  orderId     Int         @map("order_id")
-  uploaderId  Int         @map("uploader_id")
-  type        PhotoType   @default(OTHER)
-  fileUrl     String      @map("file_url")
-  description String?
-  createdAt   DateTime    @default(now()) @map("created_at")
-
-  order       Order       @relation(fields: [orderId], references: [id])
-
-  @@map("order_photos")
-}
-
-enum PhotoType {
-  BEFORE
-  AFTER
-  PROBLEM
-  TEST_PROOF
-  OTHER
-}
-
-// ==================== PAYMENTS ====================
 model Payment {
-  id            Int           @id @default(autoincrement())
-  orderId       Int           @map("order_id")
-  customerId    Int           @map("customer_id")
-  providerId    Int?          @map("provider_id")
-  amount        Float
-  method        String?
-  status        PaymentStatus @default(PENDING)
-  transactionId String?       @map("transaction_id")
-  createdAt     DateTime      @default(now()) @map("created_at")
-  updatedAt     DateTime      @updatedAt @map("updated_at")
-  capturedAt    DateTime?     @map("captured_at")
-  releasedAt    DateTime?     @map("released_at")
+  id                       BigInt     @id @default(autoincrement())
+  tenant_id                BigInt     @default(1)
+  orderId                  BigInt     @map("order_id")
+  customerId               BigInt     @map("customer_id")
+  providerId               BigInt?    @map("provider_id")
+  total_amount             Decimal    @db.Decimal(10, 2)
+  advance_amount           Decimal?   @default(0) @db.Decimal(10, 2)
+  remaining_amount         Decimal?   @default(0) @db.Decimal(10, 2)
+  platform_fee             Decimal?   @default(0) @db.Decimal(10, 2)
+  currency                 String?    @default("RON")
+  stripe_payment_intent_id String?
+  stripe_charge_id         String?
+  stripe_transfer_id       String?
+  status                   String     @default("pending")
+  authorized_at            DateTime?  @db.Timestamptz(6)
+  advance_paid_at          DateTime?  @db.Timestamptz(6)
+  held_at                  DateTime?  @db.Timestamptz(6)
+  releasedAt               DateTime?  @map("released_at") @db.Timestamptz(6)
+  refunded_at              DateTime?  @db.Timestamptz(6)
+  auto_release_at          DateTime?  @db.Timestamptz(6)
+  createdAt                DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  disputes                 Dispute[]
+  users                    User       @relation(fields: [customerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  order                    Order      @relation(fields: [orderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  providers                providers? @relation(fields: [providerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tenants                  tenants    @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  order         Order         @relation(fields: [orderId], references: [id])
-
+  @@index([orderId], map: "idx_payments_order")
+  @@index([status], map: "idx_payments_status")
   @@map("payments")
 }
 
-enum PaymentStatus {
-  PENDING
-  AUTHORIZED
-  BLOCKED
-  CAPTURED
-  RELEASED
-  REFUNDED
-  FAILED
-}
-
-// ==================== DISPUTES ====================
 model Dispute {
-  id          Int           @id @default(autoincrement())
-  orderId     Int           @map("order_id")
-  clientId    Int           @map("client_id")
-  providerId  Int           @map("provider_id")
-  description String
-  photoUrl    String?       @map("photo_url")
-  status      DisputeStatus @default(OPEN)
-  resolution  String?
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @updatedAt @map("updated_at")
-  resolvedAt  DateTime?     @map("resolved_at")
+  id                                BigInt    @id @default(autoincrement())
+  tenant_id                         BigInt    @default(1)
+  orderId                           BigInt    @map("order_id")
+  payment_id                        BigInt?
+  filed_by                          BigInt
+  filed_by_role                     String
+  category                          String
+  title                             String
+  description                       String
+  what_not_working                  String?
+  technical_details                 String?
+  status                            String    @default("open")
+  resolution_notes                  String?
+  resolved_by                       BigInt?
+  resolution_amount                 Decimal?  @db.Decimal(10, 2)
+  revisit_scheduled_at              DateTime? @db.Timestamptz(6)
+  revisit_cost                      Decimal?  @default(0) @db.Decimal(10, 2)
+  revisit_notes                     String?
+  createdAt                         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  resolvedAt                        DateTime? @map("resolved_at") @db.Timestamptz(6)
+  users_disputes_filed_byTousers    User      @relation("disputes_filed_byTousers", fields: [filed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  order                             Order     @relation(fields: [orderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  payments                          Payment?  @relation(fields: [payment_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_disputes_resolved_byTousers User?     @relation("disputes_resolved_byTousers", fields: [resolved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tenants                           tenants   @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  order       Order         @relation(fields: [orderId], references: [id])
-
+  @@index([orderId], map: "idx_disputes_order")
+  @@index([status], map: "idx_disputes_status")
   @@map("disputes")
 }
 
-enum DisputeStatus {
-  OPEN
-  UNDER_REVIEW
-  REVISIT_SCHEDULED
-  RESOLVED_CLIENT_FAVOR
-  RESOLVED_PROVIDER_FAVOR
-  CLOSED
-}
-
-// ==================== MESSAGES ====================
 model Message {
-  id          Int       @id @default(autoincrement())
-  orderId     Int       @map("order_id")
-  senderId    Int       @map("sender_id")
-  receiverId  Int       @map("receiver_id")
-  message     String
-  isRead      Boolean   @default(false) @map("is_read")
-  createdAt   DateTime  @default(now()) @map("created_at")
+  id           BigInt    @id @default(autoincrement())
+  job_id       BigInt
+  senderId     BigInt    @map("sender_id")
+  receiverId   BigInt    @map("receiver_id")
+  message      String
+  message_type String?   @default("text")
+  isRead       Boolean?  @default(false) @map("is_read")
+  read_at      DateTime? @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  jobs         jobs      @relation(fields: [job_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  receiver     User      @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sender       User      @relation("SentMessages", fields: [senderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  order       Order     @relation(fields: [orderId], references: [id])
-  sender      User      @relation("SentMessages", fields: [senderId], references: [id])
-  receiver    User      @relation("ReceivedMessages", fields: [receiverId], references: [id])
-
+  @@index([job_id], map: "idx_messages_job")
+  @@index([senderId], map: "idx_messages_sender")
   @@map("messages")
 }
 
-// ==================== REVIEWS ====================
 model Review {
-  id          Int       @id @default(autoincrement())
-  orderId     Int       @map("order_id")
-  fromUserId  Int       @map("from_user_id")
-  toUserId    Int       @map("to_user_id")
-  rating      Int
-  comment     String?
-  response    String?
-  createdAt   DateTime  @default(now()) @map("created_at")
+  id                   BigInt    @id @default(autoincrement())
+  job_id               BigInt
+  fromUserId           BigInt    @map("from_user_id")
+  toUserId             BigInt    @map("to_user_id")
+  rating               Int
+  quality_rating       Int?
+  punctuality_rating   Int?
+  communication_rating Int?
+  comment              String?
+  response             String?
+  response_at          DateTime? @db.Timestamptz(6)
+  is_public            Boolean?  @default(true)
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  fromUser             User      @relation("ReviewsGiven", fields: [fromUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  jobs                 jobs      @relation(fields: [job_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  toUser               User      @relation("ReviewsReceived", fields: [toUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  order       Order     @relation(fields: [orderId], references: [id])
-  fromUser    User      @relation("ReviewsGiven", fields: [fromUserId], references: [id])
-  toUser      User      @relation("ReviewsReceived", fields: [toUserId], references: [id])
-
+  @@unique([job_id, fromUserId])
+  @@index([job_id], map: "idx_reviews_job")
+  @@index([toUserId], map: "idx_reviews_to_user")
   @@map("reviews")
 }
 
-// ==================== WALLET ====================
-model Wallet {
-  id          Int       @id @default(autoincrement())
-  userId      Int       @unique @map("user_id")
-  balance     Float     @default(0)
-  currency    String    @default("RON")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-
-  user        User      @relation(fields: [userId], references: [id])
-  withdrawals Withdrawal[]
-
-  @@map("wallets")
-}
-
 model Withdrawal {
-  id          Int              @id @default(autoincrement())
-  walletId    Int              @map("wallet_id")
-  amount      Float
-  bankAccount String?          @map("bank_account")
-  status      WithdrawalStatus @default(PENDING)
-  createdAt   DateTime         @default(now()) @map("created_at")
-  processedAt DateTime?        @map("processed_at")
+  id                                    BigInt    @id @default(autoincrement())
+  prestator_id                          BigInt
+  walletId                              BigInt    @map("wallet_id")
+  amount                                Decimal   @db.Decimal(10, 2)
+  currency                              String?   @default("RON")
+  bank_name                             String
+  bankAccount                           String    @map("bank_account")
+  account_holder                        String
+  status                                String    @default("pending")
+  processedAt                           DateTime? @map("processed_at") @db.Timestamptz(6)
+  processed_by                          BigInt?
+  transaction_reference                 String?
+  failure_reason                        String?
+  createdAt                             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updated_at                            DateTime  @default(now()) @db.Timestamptz(6)
+  users_withdrawals_prestator_idTousers User      @relation("withdrawals_prestator_idTousers", fields: [prestator_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_withdrawals_processed_byTousers User?     @relation("withdrawals_processed_byTousers", fields: [processed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  wallet                                wallet    @relation(fields: [walletId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  wallet      Wallet           @relation(fields: [walletId], references: [id])
-
+  @@index([prestator_id], map: "idx_withdrawals_prestator")
+  @@index([status], map: "idx_withdrawals_status")
   @@map("withdrawals")
 }
 
-enum WithdrawalStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
-  FAILED
-}
-
-// ==================== ORDER STATUS HISTORY ====================
 model OrderStatusHistory {
-  id        Int         @id @default(autoincrement())
-  orderId   Int         @map("order_id")
-  status    OrderStatus
-  notes     String?
-  createdAt DateTime    @default(now()) @map("created_at")
+  id              BigInt   @id @default(autoincrement())
+  tenant_id       BigInt   @default(1)
+  orderId         BigInt   @map("order_id")
+  old_status      String?
+  new_status      String
+  changed_by      BigInt?
+  changed_by_role String?
+  notes           String?
+  metadata        Json?
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  users           User?    @relation(fields: [changed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tenants         tenants  @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  order     Order       @relation(fields: [orderId], references: [id])
-
+  @@index([orderId], map: "idx_status_history_order")
   @@map("order_status_history")
 }
 
-// ==================== NOTIFICATIONS ====================
 model Notification {
-  id        Int       @id @default(autoincrement())
-  userId    Int       @map("user_id")
-  title     String
-  message   String
-  type      String?
-  isRead    Boolean   @default(false) @map("is_read")
-  data      Json?
-  createdAt DateTime  @default(now()) @map("created_at")
+  id                BigInt    @id @default(autoincrement())
+  tenant_id         BigInt    @default(1)
+  userId            BigInt    @map("user_id")
+  notification_type String
+  title             String
+  body              String
+  data              Json?
+  isRead            Boolean?  @default(false) @map("is_read")
+  read_at           DateTime? @db.Timestamptz(6)
+  push_sent         Boolean?  @default(false)
+  push_sent_at      DateTime? @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  tenants           tenants   @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user              User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  user      User      @relation(fields: [userId], references: [id])
-
+  @@index([userId], map: "idx_notifications_user")
   @@map("notifications")
 }
 
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model chat_messages {
+  id           BigInt    @id @default(autoincrement())
+  tenant_id    BigInt    @default(1)
+  order_id     BigInt
+  sender_id    BigInt
+  sender_role  String
+  message_type String    @default("text")
+  content      String
+  media_url    String?
+  metadata     Json?
+  is_read      Boolean?  @default(false)
+  read_at      DateTime? @db.Timestamptz(6)
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  orders       Order     @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tenants      tenants   @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([order_id], map: "idx_chat_order")
+  @@index([sender_id], map: "idx_chat_sender")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model job_photos {
+  id            BigInt   @id @default(autoincrement())
+  job_id        BigInt
+  uploaded_by   BigInt
+  type          String
+  file_url      String
+  thumbnail_url String?
+  description   String?
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  jobs          jobs     @relation(fields: [job_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users         User     @relation(fields: [uploaded_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([job_id], map: "idx_job_photos_job")
+  @@index([type], map: "idx_job_photos_type")
+}
+
+model job_status_history {
+  id              BigInt   @id @default(autoincrement())
+  job_id          BigInt
+  old_status      String?
+  new_status      String
+  changed_by      BigInt?
+  changed_by_role String?
+  notes           String?
+  metadata        Json?
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  users           User?    @relation(fields: [changed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  jobs            jobs     @relation(fields: [job_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([job_id], map: "idx_job_history_job")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model jobs {
+  id                             BigInt                @id @default(autoincrement())
+  client_id                      BigInt
+  prestator_id                   BigInt?
+  title                          String
+  description                    String
+  service_id                     BigInt?
+  address                        String
+  address_details                String?
+  location_lat                   Decimal?              @db.Decimal(10, 7)
+  location_lng                   Decimal?              @db.Decimal(10, 7)
+  scheduled_date                 DateTime?             @db.Date
+  scheduled_time_start           DateTime?             @db.Time(6)
+  scheduled_time_end             DateTime?             @db.Time(6)
+  is_flexible                    Boolean?              @default(false)
+  price_estimate                 Decimal?              @db.Decimal(10, 2)
+  price_final                    Decimal?              @db.Decimal(10, 2)
+  currency                       String?               @default("RON")
+  platform_fee                   Decimal?              @default(0) @db.Decimal(10, 2)
+  status                         String                @default("pending")
+  accepted_at                    DateTime?             @db.Timestamptz(6)
+  started_at                     DateTime?             @db.Timestamptz(6)
+  completed_at                   DateTime?             @db.Timestamptz(6)
+  confirmed_at                   DateTime?             @db.Timestamptz(6)
+  confirmation_deadline          DateTime?             @db.Timestamptz(6)
+  paid_at                        DateTime?             @db.Timestamptz(6)
+  cancelled_at                   DateTime?             @db.Timestamptz(6)
+  cancellation_reason            String?
+  cancelled_by                   BigInt?
+  created_at                     DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at                     DateTime              @default(now()) @db.Timestamptz(6)
+  job_photos                     job_photos[]
+  job_status_history             job_status_history[]
+  users_jobs_cancelled_byTousers User?                 @relation("jobs_cancelled_byTousers", fields: [cancelled_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_jobs_client_idTousers    User                  @relation("jobs_client_idTousers", fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_jobs_prestator_idTousers User?                 @relation("jobs_prestator_idTousers", fields: [prestator_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  services                       Service?              @relation(fields: [service_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  messages                       Message[]
+  reviews                        Review[]
+  wallet_transactions            wallet_transactions[]
+
+  @@index([client_id], map: "idx_jobs_client")
+  @@index([scheduled_date], map: "idx_jobs_date")
+  @@index([prestator_id], map: "idx_jobs_prestator")
+  @@index([status], map: "idx_jobs_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model order_evidence {
+  id               BigInt    @id @default(autoincrement())
+  tenant_id        BigInt    @default(1)
+  order_id         BigInt
+  uploaded_by      BigInt
+  evidence_type    String
+  media_type       String
+  file_url         String
+  thumbnail_url    String?
+  file_size_bytes  BigInt?
+  duration_seconds Int?
+  description      String?
+  captured_at      DateTime? @default(now()) @db.Timestamptz(6)
+  location_lat     Decimal?  @db.Decimal(10, 7)
+  location_lng     Decimal?  @db.Decimal(10, 7)
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  orders           Order     @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tenants          tenants   @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users            User      @relation(fields: [uploaded_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([order_id], map: "idx_evidence_order")
+  @@index([evidence_type], map: "idx_evidence_type")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model prestator_services {
+  id                 BigInt          @id @default(autoincrement())
+  prestator_id       BigInt
+  service_id         BigInt
+  price              Decimal?        @db.Decimal(10, 2)
+  price_type         String?         @default("fixed")
+  description        String?
+  is_active          Boolean?        @default(true)
+  prestatori_details ProviderDetails @relation(fields: [prestator_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  services           Service         @relation(fields: [service_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([prestator_id, service_id])
+}
+
+model providers {
+  id             BigInt            @id @default(autoincrement())
+  tenant_id      BigInt
+  user_id        BigInt            @unique
+  display_name   String
+  rating_avg     Decimal?          @default(0) @db.Decimal(3, 2)
+  rating_count   Int?              @default(0)
+  is_verified    Boolean?          @default(false)
+  providerOrders Order[]           @relation("ProviderOrders")
+  payments       Payment[]
+  services       ProviderService[]
+  tenants        tenants           @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users          User              @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model scheduled_tasks {
+  id             BigInt    @id @default(autoincrement())
+  tenant_id      BigInt    @default(1)
+  task_type      String
+  reference_type String
+  reference_id   BigInt
+  scheduled_for  DateTime  @db.Timestamptz(6)
+  executed_at    DateTime? @db.Timestamptz(6)
+  status         String?   @default("pending")
+  payload        Json?
+  result         Json?
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  tenants        tenants   @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model tenants {
+  id                   BigInt               @id @default(autoincrement())
+  code                 String               @unique
+  name                 String
+  tz                   String               @default("Europe/Bucharest")
+  is_active            Boolean              @default(true)
+  chat_messages        chat_messages[]
+  disputes             Dispute[]
+  notifications        Notification[]
+  order_evidence       order_evidence[]
+  order_status_history OrderStatusHistory[]
+  orders               Order[]
+  payments             Payment[]
+  providers            providers[]
+  scheduled_tasks      scheduled_tasks[]
+  services             Service[]
+  user_blocks          user_blocks[]
+  user_ratings         user_ratings[]
+  users                User[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model user_blocks {
+  id                                  BigInt   @id @default(autoincrement())
+  tenant_id                           BigInt   @default(1)
+  blocker_id                          BigInt
+  blocked_id                          BigInt
+  blocker_role                        String
+  reason                              String
+  notes                               String?
+  created_at                          DateTime @default(now()) @db.Timestamptz(6)
+  users_user_blocks_blocked_idTousers User     @relation("user_blocks_blocked_idTousers", fields: [blocked_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_user_blocks_blocker_idTousers User     @relation("user_blocks_blocker_idTousers", fields: [blocker_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tenants                             tenants  @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([blocker_id, blocked_id], map: "idx_blocks_unique")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model user_ratings {
+  id                                 BigInt    @id @default(autoincrement())
+  tenant_id                          BigInt    @default(1)
+  order_id                           BigInt
+  rater_id                           BigInt
+  rated_id                           BigInt
+  rater_role                         String
+  overall_rating                     Int
+  quality_rating                     Int?
+  punctuality_rating                 Int?
+  communication_rating               Int?
+  review_text                        String?
+  is_public                          Boolean?  @default(true)
+  response_text                      String?
+  response_at                        DateTime? @db.Timestamptz(6)
+  created_at                         DateTime  @default(now()) @db.Timestamptz(6)
+  orders                             Order     @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_user_ratings_rated_idTousers User      @relation("user_ratings_rated_idTousers", fields: [rated_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_user_ratings_rater_idTousers User      @relation("user_ratings_rater_idTousers", fields: [rater_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tenants                            tenants   @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([order_id, rater_id], map: "idx_ratings_unique")
+  @@index([order_id], map: "idx_ratings_order")
+  @@index([rated_id], map: "idx_ratings_rated")
+}
+
+model wallet {
+  id                  BigInt                @id @default(autoincrement())
+  prestator_id        BigInt                @unique
+  balance             Decimal               @default(0) @db.Decimal(10, 2)
+  pending_balance     Decimal               @default(0) @db.Decimal(10, 2)
+  total_earned        Decimal               @default(0) @db.Decimal(10, 2)
+  total_withdrawn     Decimal               @default(0) @db.Decimal(10, 2)
+  currency            String?               @default("RON")
+  created_at          DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime              @default(now()) @db.Timestamptz(6)
+  users               User                  @relation(fields: [prestator_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  wallet_transactions wallet_transactions[]
+  withdrawals         Withdrawal[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model wallet_transactions {
+  id            BigInt   @id @default(autoincrement())
+  wallet_id     BigInt
+  job_id        BigInt?
+  type          String
+  amount        Decimal  @db.Decimal(10, 2)
+  balance_after Decimal  @db.Decimal(10, 2)
+  description   String?
+  reference_id  String?
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  jobs          jobs?    @relation(fields: [job_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  wallet        wallet   @relation(fields: [wallet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([wallet_id], map: "idx_wallet_tx_wallet")
+}

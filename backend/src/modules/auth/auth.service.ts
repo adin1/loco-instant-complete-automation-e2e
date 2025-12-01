@@ -43,6 +43,47 @@ export class AuthService {
 
   // Login + generare token JWT
   async login(email: string, password: string) {
+    // Demo mode - acceptă orice email cu parola "demo123" în development
+    if (process.env.NODE_ENV !== 'production' && password === 'demo123') {
+      // Caută sau creează utilizatorul demo
+      let user = await this.prisma.user.findUnique({ where: { email } });
+      
+      if (!user) {
+        // Returnează un user demo fără a-l crea în DB
+        const demoUser = {
+          id: -999,
+          email,
+          password: '',
+          name: email.split('@')[0],
+          role: 'customer',
+        } as any;
+
+        const payload = { sub: demoUser.id, email: demoUser.email };
+        const token = jwt.sign(
+          payload,
+          process.env.JWT_SECRET || 'local_secret_key',
+          { expiresIn: '7d' },
+        );
+
+        return {
+          access_token: token,
+          user: demoUser,
+        };
+      }
+
+      const payload = { sub: user.id, email: user.email };
+      const token = jwt.sign(
+        payload,
+        process.env.JWT_SECRET || 'local_secret_key',
+        { expiresIn: '7d' },
+      );
+
+      return {
+        access_token: token,
+        user,
+      };
+    }
+
     // Demo fallback user – permite acces fără bază de date funcțională
     if (
       email === 'demo@loco-instant.ro' &&

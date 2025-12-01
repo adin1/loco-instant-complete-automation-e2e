@@ -77,7 +77,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     {
       'id': '1',
       'name': 'Ion Popescu',
-      'photo': 'https://randomuser.me/api/portraits/men/32.jpg',
+      'photo': 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=150&h=150&fit=crop&crop=face',
       'motto': 'Soluții electrice rapide și sigure',
       'services': ['Instalații electrice', 'Reparații', 'Verificări'],
       'rating': 4.8,
@@ -85,7 +85,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     {
       'id': '2',
       'name': 'Maria Ionescu',
-      'photo': 'https://randomuser.me/api/portraits/women/44.jpg',
+      'photo': 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=150&h=150&fit=crop&crop=face',
       'motto': 'Curățenie impecabilă, prețuri corecte',
       'services': ['Curățenie generală', 'După constructor', 'Birouri'],
       'rating': 4.9,
@@ -93,7 +93,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     {
       'id': '3',
       'name': 'Vasile Mureșan',
-      'photo': 'https://randomuser.me/api/portraits/men/52.jpg',
+      'photo': 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150&h=150&fit=crop&crop=face',
       'motto': 'Instalații și reparații non-stop',
       'services': ['Instalații sanitare', 'Desfundări', 'Centrale'],
       'rating': 4.7,
@@ -101,7 +101,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     {
       'id': '4',
       'name': 'Alex Radu',
-      'photo': 'https://randomuser.me/api/portraits/men/22.jpg',
+      'photo': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
       'motto': 'Reparăm orice, oricând',
       'services': ['Mobilă', 'Uși', 'Montaj IKEA'],
       'rating': 4.6,
@@ -109,7 +109,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     {
       'id': '5',
       'name': 'George Transport',
-      'photo': 'https://randomuser.me/api/portraits/men/45.jpg',
+      'photo': 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
       'motto': 'Transport rapid în Cluj',
       'services': ['Mutări', 'Marfă', 'Curierat'],
       'rating': 4.5,
@@ -117,7 +117,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     {
       'id': '6',
       'name': 'Elena Grădini',
-      'photo': 'https://randomuser.me/api/portraits/women/28.jpg',
+      'photo': 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop&crop=face',
       'motto': 'Grădina ta, pasiunea noastră',
       'services': ['Gazon', 'Întreținere', 'Irigații'],
       'rating': 4.8,
@@ -126,7 +126,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     {
       'id': '7',
       'name': 'Andrei Zugrav',
-      'photo': 'https://randomuser.me/api/portraits/men/55.jpg',
+      'photo': 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
       'motto': 'Zugrăveli de calitate superioară',
       'services': ['Interior', 'Exterior', 'Decorative'],
       'rating': 4.9,
@@ -134,7 +134,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     {
       'id': '8',
       'name': 'Mihai Acoperiș',
-      'photo': 'https://randomuser.me/api/portraits/men/62.jpg',
+      'photo': 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face',
       'motto': 'Acoperiș sigur, casă fericită',
       'services': ['Reparații', 'Țiglă', 'Hidroizolații'],
       'rating': 4.7,
@@ -142,7 +142,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     {
       'id': '9',
       'name': 'Dan IT Expert',
-      'photo': 'https://randomuser.me/api/portraits/men/35.jpg',
+      'photo': 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&h=150&fit=crop&crop=face',
       'motto': 'Rezolvăm orice problemă IT',
       'services': ['PC', 'Laptop', 'Rețele'],
       'rating': 4.8,
@@ -150,7 +150,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     {
       'id': '10',
       'name': 'Ana Curățenie Pro',
-      'photo': 'https://randomuser.me/api/portraits/women/33.jpg',
+      'photo': 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face',
       'motto': 'Strălucire garantată',
       'services': ['Apartamente', 'Case', 'Birouri'],
       'rating': 4.9,
@@ -158,7 +158,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     {
       'id': '11',
       'name': 'Florin Electric',
-      'photo': 'https://randomuser.me/api/portraits/men/42.jpg',
+      'photo': 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&h=150&fit=crop&crop=face',
       'motto': 'Electrician autorizat ANRE',
       'services': ['Autorizat', 'Verificări', 'Avarii'],
       'rating': 4.6,
@@ -166,7 +166,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     {
       'id': '12',
       'name': 'Cristina Home',
-      'photo': 'https://randomuser.me/api/portraits/women/55.jpg',
+      'photo': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face',
       'motto': 'Casa ta în mâini bune',
       'services': ['Menaj', 'Spălat', 'Călcat'],
       'rating': 4.7,
@@ -175,16 +175,16 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
 
   // Produse marketplace (scroll vertical)
   final List<Map<String, dynamic>> _marketplaceProducts = [
-    {'name': 'Miere de albine 100% naturală', 'description': 'Direct de la producător, 1kg', 'price': '45 RON'},
-    {'name': 'Dulceață de căpșuni', 'description': 'Făcută în casă, 350g', 'price': '25 RON'},
-    {'name': 'Ouă de țară proaspete', 'description': 'Găini crescute liber, 30 buc', 'price': '35 RON'},
-    {'name': 'Brânză de burduf', 'description': 'Tradițională, 500g', 'price': '40 RON'},
-    {'name': 'Țuică de prune', 'description': 'Artizanală, 1L', 'price': '60 RON'},
-    {'name': 'Zacuscă de casă', 'description': 'Rețetă tradițională, 500g', 'price': '30 RON'},
-    {'name': 'Pâine de casă', 'description': 'Cu maia naturală', 'price': '15 RON'},
-    {'name': 'Gem de zmeură', 'description': 'Fără conservanți, 350g', 'price': '28 RON'},
-    {'name': 'Unt de țară', 'description': 'Din lapte de vacă, 250g', 'price': '22 RON'},
-    {'name': 'Smântână de casă', 'description': 'Proaspătă, 500g', 'price': '18 RON'},
+    {'name': 'Miere de albine 100% naturală', 'description': 'Direct de la producător, 1kg', 'price': '45 RON', 'image': 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=100&h=100&fit=crop'},
+    {'name': 'Dulceață de căpșuni', 'description': 'Făcută în casă, 350g', 'price': '25 RON', 'image': 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=100&h=100&fit=crop'},
+    {'name': 'Ouă de țară proaspete', 'description': 'Găini crescute liber, 30 buc', 'price': '35 RON', 'image': 'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=100&h=100&fit=crop'},
+    {'name': 'Brânză de burduf', 'description': 'Tradițională, 500g', 'price': '40 RON', 'image': 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=100&h=100&fit=crop'},
+    {'name': 'Țuică de prune', 'description': 'Artizanală, 1L', 'price': '60 RON', 'image': 'https://images.unsplash.com/photo-1569529465841-dfecdab7503b?w=100&h=100&fit=crop'},
+    {'name': 'Zacuscă de casă', 'description': 'Rețetă tradițională, 500g', 'price': '30 RON', 'image': 'https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=100&h=100&fit=crop'},
+    {'name': 'Pâine de casă', 'description': 'Cu maia naturală', 'price': '15 RON', 'image': 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=100&h=100&fit=crop'},
+    {'name': 'Gem de zmeură', 'description': 'Fără conservanți, 350g', 'price': '28 RON', 'image': 'https://images.unsplash.com/photo-1474440692490-2e83ae13ba29?w=100&h=100&fit=crop'},
+    {'name': 'Unt de țară', 'description': 'Din lapte de vacă, 250g', 'price': '22 RON', 'image': 'https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?w=100&h=100&fit=crop'},
+    {'name': 'Smântână de casă', 'description': 'Proaspătă, 500g', 'price': '18 RON', 'image': 'https://images.unsplash.com/photo-1628088062854-d1870b4553da?w=100&h=100&fit=crop'},
   ];
 
   List<Map<String, dynamic>> get _currentProviders {
@@ -948,15 +948,23 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
       ),
       child: Row(
         children: [
-          // Product image placeholder
+          // Product image
           Container(
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: const Color(0xFFE8F5E9),
               borderRadius: BorderRadius.circular(8),
+              image: product['image'] != null
+                  ? DecorationImage(
+                      image: NetworkImage(product['image']),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+              color: product['image'] == null ? const Color(0xFFE8F5E9) : null,
             ),
-            child: const Icon(Icons.eco, color: Color(0xFF4CAF50), size: 24),
+            child: product['image'] == null
+                ? const Icon(Icons.eco, color: Color(0xFF4CAF50), size: 24)
+                : null,
           ),
           const SizedBox(width: 10),
           
