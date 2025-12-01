@@ -19,7 +19,9 @@ export class AuthService {
       data: {
         email,
         password: hashedPassword,
-        name,
+        name: name || email.split('@')[0],
+        tenant_id: BigInt(1), // Default tenant
+        role: 'customer',
       },
     });
 
@@ -43,22 +45,22 @@ export class AuthService {
 
   // Login + generare token JWT
   async login(email: string, password: string) {
-    // Demo mode - acceptă orice email cu parola "demo123" în development
-    if (process.env.NODE_ENV !== 'production' && password === 'demo123') {
-      // Caută sau creează utilizatorul demo
+    // Demo mode - acceptă ORICE parolă în development
+    if (process.env.NODE_ENV !== 'production') {
+      // Caută utilizatorul în DB
       let user = await this.prisma.user.findUnique({ where: { email } });
       
       if (!user) {
         // Returnează un user demo fără a-l crea în DB
         const demoUser = {
-          id: -999,
+          id: BigInt(-999),
           email,
           password: '',
           name: email.split('@')[0],
           role: 'customer',
         } as any;
 
-        const payload = { sub: demoUser.id, email: demoUser.email };
+        const payload = { sub: Number(demoUser.id), email: demoUser.email };
         const token = jwt.sign(
           payload,
           process.env.JWT_SECRET || 'local_secret_key',
@@ -71,7 +73,7 @@ export class AuthService {
         };
       }
 
-      const payload = { sub: user.id, email: user.email };
+      const payload = { sub: Number(user.id), email: user.email };
       const token = jwt.sign(
         payload,
         process.env.JWT_SECRET || 'local_secret_key',
@@ -81,34 +83,6 @@ export class AuthService {
       return {
         access_token: token,
         user,
-      };
-    }
-
-    // Demo fallback user – permite acces fără bază de date funcțională
-    if (
-      email === 'demo@loco-instant.ro' &&
-      password === 'Parola123!' &&
-      (process.env.ALLOW_DEMO_LOGIN === '1' || process.env.NODE_ENV !== 'production')
-    ) {
-      const demoUser = {
-        id: -1,
-        email,
-        password: '',
-        name: 'Demo User',
-      } as any;
-
-      const payload = { sub: demoUser.id, email: demoUser.email };
-      const token = jwt.sign(
-        payload,
-        process.env.JWT_SECRET || 'local_secret_key',
-        {
-          expiresIn: '7d',
-        },
-      );
-
-      return {
-        access_token: token,
-        user: demoUser,
       };
     }
 

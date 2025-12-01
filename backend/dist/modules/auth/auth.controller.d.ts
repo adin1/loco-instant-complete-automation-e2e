@@ -7,9 +7,7 @@ export declare class AuthController {
         password: string;
         name?: string;
     }): Promise<{
-        name: string | null;
         id: bigint;
-        tenant_id: bigint;
         role: string;
         phone_e164: string | null;
         email: string | null;
@@ -17,6 +15,8 @@ export declare class AuthController {
         createdAt: Date;
         updatedAt: Date;
         password: string | null;
+        name: string | null;
+        tenant_id: bigint;
     }>;
     login(body: {
         email: string;
