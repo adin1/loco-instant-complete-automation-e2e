@@ -1,5 +1,94 @@
-node_modules
-# Keep environment variables out of version control
-.env
+# ==============================================
+# LOCO INSTANT - GITIGNORE (SECURITATE)
+# ==============================================
 
+# Dependențe
+node_modules/
+.pnp/
+.pnp.js
+
+# Fișiere de mediu (PAROLE, SECRETE)
+.env
+.env.local
+.env.production
+.env.*.local
+*.env
+
+# Baze de date locale
+*.db
+*.sqlite
+*.sqlite3
+/data/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build-uri (opțional - le păstrăm pentru deploy)
+# /backend/dist/
+# /frontend/loco_instant_flutter/build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Prisma
 /generated/prisma
+
+# Backup-uri locale
+*.backup
+*.bak
+/backups/
+
+# Chei și certificate
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Fișiere temporare
+*.tmp
+*.temp
+.cache/
+
+# Flutter specific
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+*.iml
+
+# Android
+*.apk
+*.aab
+.gradle/
+local.properties
+android/.gradle/
+android/app/debug/
+android/app/profile/
+android/app/release/
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework/
+ios/Flutter/Flutter.podspec
+
+# Fișiere cu parole (IMPORTANT!)
+*password*
+*secret*
+*credentials*
+!.gitignore
