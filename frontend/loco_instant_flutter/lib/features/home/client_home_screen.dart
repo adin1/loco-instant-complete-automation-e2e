@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -16,13 +18,17 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
   final _marketplaceSearchController = TextEditingController();
   final ScrollController _marketplaceScrollController = ScrollController();
   final Completer<GoogleMapController> _mapController = Completer();
+  final FocusNode _searchFocusNode = FocusNode();
   
   int? _hoveredCategoryIndex;
+  int? _hoveredSubcategoryIndex;
   int _currentProviderPage = 0;
   Timer? _marketplaceScrollTimer;
+  String? _selectedCategory;
+  String? _selectedSubcategory;
 
-  // Cluj-Napoca coordinates
-  static const LatLng _clujCenter = LatLng(46.770439, 23.591423);
+  // Cluj-Napoca coordinates (current user location simulation)
+  static const LatLng _userLocation = LatLng(46.770439, 23.591423);
 
   // Categorii cu subcategorii
   final List<Map<String, dynamic>> _categories = [
@@ -73,7 +79,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     },
   ];
 
-  // Prestatori (6 per pagină)
+  // Prestatori cu coordonate pentru distanță
   final List<Map<String, dynamic>> _allProviders = [
     {
       'id': '1',
@@ -82,6 +88,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
       'motto': 'Soluții electrice rapide și sigure',
       'services': ['Instalații electrice', 'Reparații', 'Verificări'],
       'rating': 4.8,
+      'lat': 46.771, 'lng': 23.592, 'distance': 0.2,
     },
     {
       'id': '2',
@@ -90,6 +97,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
       'motto': 'Curățenie impecabilă, prețuri corecte',
       'services': ['Curățenie generală', 'După constructor', 'Birouri'],
       'rating': 4.9,
+      'lat': 46.768, 'lng': 23.590, 'distance': 0.5,
     },
     {
       'id': '3',
@@ -98,6 +106,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
       'motto': 'Instalații și reparații non-stop',
       'services': ['Instalații sanitare', 'Desfundări', 'Centrale'],
       'rating': 4.7,
+      'lat': 46.772, 'lng': 23.595, 'distance': 0.8,
     },
     {
       'id': '4',
@@ -106,6 +115,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
       'motto': 'Reparăm orice, oricând',
       'services': ['Mobilă', 'Uși', 'Montaj IKEA'],
       'rating': 4.6,
+      'lat': 46.765, 'lng': 23.588, 'distance': 1.2,
     },
     {
       'id': '5',
@@ -114,6 +124,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
       'motto': 'Transport rapid în Cluj',
       'services': ['Mutări', 'Marfă', 'Curierat'],
       'rating': 4.5,
+      'lat': 46.775, 'lng': 23.600, 'distance': 1.5,
     },
     {
       'id': '6',
@@ -122,54 +133,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
       'motto': 'Grădina ta, pasiunea noastră',
       'services': ['Gazon', 'Întreținere', 'Irigații'],
       'rating': 4.8,
-    },
-    {
-      'id': '7',
-      'name': 'Andrei Zugrav',
-      'photo': 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
-      'motto': 'Zugrăveli de calitate superioară',
-      'services': ['Interior', 'Exterior', 'Decorative'],
-      'rating': 4.9,
-    },
-    {
-      'id': '8',
-      'name': 'Mihai Acoperiș',
-      'photo': 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face',
-      'motto': 'Acoperiș sigur, casă fericită',
-      'services': ['Reparații', 'Țiglă', 'Hidroizolații'],
-      'rating': 4.7,
-    },
-    {
-      'id': '9',
-      'name': 'Dan IT Expert',
-      'photo': 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&h=150&fit=crop&crop=face',
-      'motto': 'Rezolvăm orice problemă IT',
-      'services': ['PC', 'Laptop', 'Rețele'],
-      'rating': 4.8,
-    },
-    {
-      'id': '10',
-      'name': 'Ana Curățenie Pro',
-      'photo': 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face',
-      'motto': 'Strălucire garantată',
-      'services': ['Apartamente', 'Case', 'Birouri'],
-      'rating': 4.9,
-    },
-    {
-      'id': '11',
-      'name': 'Florin Electric',
-      'photo': 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&h=150&fit=crop&crop=face',
-      'motto': 'Electrician autorizat ANRE',
-      'services': ['Autorizat', 'Verificări', 'Avarii'],
-      'rating': 4.6,
-    },
-    {
-      'id': '12',
-      'name': 'Cristina Home',
-      'photo': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face',
-      'motto': 'Casa ta în mâini bune',
-      'services': ['Menaj', 'Spălat', 'Călcat'],
-      'rating': 4.7,
+      'lat': 46.760, 'lng': 23.585, 'distance': 2.0,
     },
   ];
 
@@ -181,19 +145,16 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     {'name': 'Brânză de burduf', 'description': 'Tradițională, 500g', 'price': '40 RON', 'image': 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=100&h=100&fit=crop'},
     {'name': 'Țuică de prune', 'description': 'Artizanală, 1L', 'price': '60 RON', 'image': 'https://images.unsplash.com/photo-1569529465841-dfecdab7503b?w=100&h=100&fit=crop'},
     {'name': 'Zacuscă de casă', 'description': 'Rețetă tradițională, 500g', 'price': '30 RON', 'image': 'https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=100&h=100&fit=crop'},
-    {'name': 'Pâine de casă', 'description': 'Cu maia naturală', 'price': '15 RON', 'image': 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=100&h=100&fit=crop'},
-    {'name': 'Gem de zmeură', 'description': 'Fără conservanți, 350g', 'price': '28 RON', 'image': 'https://images.unsplash.com/photo-1474440692490-2e83ae13ba29?w=100&h=100&fit=crop'},
-    {'name': 'Unt de țară', 'description': 'Din lapte de vacă, 250g', 'price': '22 RON', 'image': 'https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?w=100&h=100&fit=crop'},
-    {'name': 'Smântână de casă', 'description': 'Proaspătă, 500g', 'price': '18 RON', 'image': 'https://images.unsplash.com/photo-1628088062854-d1870b4553da?w=100&h=100&fit=crop'},
   ];
 
+  // Afișează doar 3 prestatori pe pagină
   List<Map<String, dynamic>> get _currentProviders {
-    final start = _currentProviderPage * 6;
-    final end = (start + 6).clamp(0, _allProviders.length);
+    final start = _currentProviderPage * 3;
+    final end = (start + 3).clamp(0, _allProviders.length);
     return _allProviders.sublist(start, end);
   }
 
-  int get _totalPages => (_allProviders.length / 6).ceil();
+  int get _totalPages => (_allProviders.length / 3).ceil();
 
   @override
   void initState() {
@@ -207,6 +168,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     _marketplaceSearchController.dispose();
     _marketplaceScrollController.dispose();
     _marketplaceScrollTimer?.cancel();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -241,6 +203,132 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     }
   }
 
+  // Căutare prestator - selectează cel mai apropiat
+  void _searchProvider() {
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Introdu un termen de căutare')),
+      );
+      return;
+    }
+
+    // Găsește prestatorii care se potrivesc
+    final matchingProviders = _allProviders.where((p) {
+      final name = (p['name'] as String).toLowerCase();
+      final services = (p['services'] as List<String>).join(' ').toLowerCase();
+      final motto = (p['motto'] as String).toLowerCase();
+      return name.contains(query) || services.contains(query) || motto.contains(query);
+    }).toList();
+
+    if (matchingProviders.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Nu am găsit prestatori pentru "$query"')),
+      );
+      return;
+    }
+
+    // Sortează după distanță și selectează cel mai apropiat
+    matchingProviders.sort((a, b) => (a['distance'] as double).compareTo(b['distance'] as double));
+    final closest = matchingProviders.first;
+
+    // Navighează la comanda pentru acest prestator
+    _initiateOrder(closest);
+  }
+
+  // Selectare subcategorie
+  void _selectSubcategory(String category, String subcategory) {
+    setState(() {
+      _selectedCategory = category;
+      _selectedSubcategory = subcategory;
+      _hoveredCategoryIndex = null;
+    });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Ai selectat: $category → $subcategory'),
+        action: SnackBarAction(
+          label: 'Caută prestatori',
+          onPressed: () {
+            _searchController.text = subcategory;
+            _searchProvider();
+          },
+        ),
+      ),
+    );
+  }
+
+  // Inițiază comandă pentru un prestator
+  void _initiateOrder(Map<String, dynamic> provider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            CircleAvatar(
+              backgroundImage: NetworkImage(provider['photo']),
+              radius: 24,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(provider['name'], style: const TextStyle(fontSize: 18)),
+                  Row(
+                    children: [
+                      const Icon(Icons.star, size: 16, color: Colors.amber),
+                      Text(' ${provider['rating']}', style: const TextStyle(fontSize: 14)),
+                      Text(' • ${provider['distance']} km', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(provider['motto'], style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey[600])),
+            const SizedBox(height: 16),
+            const Text('Servicii disponibile:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            ...(provider['services'] as List<String>).map((s) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle, size: 16, color: Color(0xFF2DD4BF)),
+                  const SizedBox(width: 8),
+                  Text(s),
+                ],
+              ),
+            )),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Anulează'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.go('/order/new?providerId=${provider['id']}');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2DD4BF),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Comandă acum'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -259,88 +347,136 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     );
   }
 
+  // ==================== LOGO WIDGET ====================
+  Widget _buildLogo({double iconSize = 36, double fontSize = 20}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Pin icon cu fulger
+        Container(
+          width: iconSize,
+          height: iconSize * 1.2,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Icon(
+                Icons.location_on,
+                size: iconSize * 1.2,
+                color: const Color(0xFF2DD4BF),
+              ),
+              Positioned(
+                top: iconSize * 0.15,
+                child: Icon(
+                  Icons.bolt,
+                  size: iconSize * 0.5,
+                  color: const Color(0xFFCDEB45),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Text LOCO INSTANT
+        RichText(
+          text: TextSpan(
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1,
+              fontFamily: 'Segoe UI', // Font similar cu cel din imagine
+            ),
+            children: const [
+              TextSpan(text: 'LOCO ', style: TextStyle(color: Colors.white)),
+              TextSpan(text: 'INSTANT', style: TextStyle(color: Color(0xFF2DD4BF))),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   // ==================== HEADER ====================
   Widget _buildHeader() {
     return Container(
-      color: const Color(0xFF1A1A1A),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF1565C0), Color(0xFF2DD4BF)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Row(
         children: [
-          _buildLogo(),
+          _buildLogo(iconSize: 32, fontSize: 18),
           const SizedBox(width: 32),
           Expanded(
             child: Container(
               height: 48,
               decoration: BoxDecoration(
-                color: const Color(0xFF333333),
-                borderRadius: BorderRadius.circular(8),
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(24),
               ),
               child: Row(
                 children: [
                   const SizedBox(width: 16),
-                  Icon(Icons.search, color: Colors.grey.shade500, size: 24),
+                  const Icon(Icons.search, color: Colors.white70, size: 22),
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextField(
                       controller: _searchController,
-                      style: const TextStyle(color: Colors.white, fontSize: 16),
-                      decoration: InputDecoration(
+                      focusNode: _searchFocusNode,
+                      style: const TextStyle(color: Colors.white, fontSize: 15),
+                      decoration: const InputDecoration(
                         hintText: 'Caută servicii sau prestatori...',
-                        hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 16),
+                        hintStyle: TextStyle(color: Colors.white60, fontSize: 15),
                         border: InputBorder.none,
                       ),
+                      onSubmitted: (_) => _searchProvider(),
                     ),
                   ),
-                  Container(
-                    margin: const EdgeInsets.all(4),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFCC0000),
-                      borderRadius: BorderRadius.circular(6),
+                  GestureDetector(
+                    onTap: _searchProvider,
+                    child: Container(
+                      margin: const EdgeInsets.all(4),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'Căutare',
+                        style: TextStyle(
+                          color: Color(0xFF1565C0),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
                     ),
-                    child: const Text('Căutare', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(width: 32),
-          _buildHeaderIcon(Icons.person_outline, 'Contul meu'),
-          const SizedBox(width: 20),
-          _buildHeaderIcon(Icons.favorite_border, 'Favorite'),
-          const SizedBox(width: 20),
-          _buildHeaderIcon(Icons.shopping_cart_outlined, 'Coș'),
+          const SizedBox(width: 24),
+          _buildHeaderButton(Icons.person_outline, 'Cont', () => context.go('/profile')),
+          const SizedBox(width: 16),
+          _buildHeaderButton(Icons.history, 'Comenzi', () => context.go('/orders')),
         ],
       ),
     );
   }
 
-  Widget _buildHeaderIcon(IconData icon, String label) {
-    return Row(
-      children: [
-        Icon(icon, color: Colors.white, size: 24),
-        const SizedBox(width: 6),
-        Text(label, style: const TextStyle(color: Colors.white, fontSize: 14)),
-      ],
-    );
-  }
-
-  Widget _buildLogo() {
-    return Row(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: const Color(0xFF2DD4BF),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(Icons.bolt, color: Color(0xFFCDEB45), size: 24),
-        ),
-        const SizedBox(width: 10),
-        const Text('LOCO', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFFCC0000))),
-        const Text(' INSTANT', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF2DD4BF))),
-      ],
+  Widget _buildHeaderButton(IconData icon, String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.white, size: 22),
+          const SizedBox(width: 6),
+          Text(label, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
+        ],
+      ),
     );
   }
 
@@ -348,87 +484,63 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
   Widget _buildDesktopLayout() {
     return Stack(
       children: [
-        // Main content
         Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1440),
+            constraints: const BoxConstraints(maxWidth: 1400),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // LEFT SIDEBAR - Categories
                   SizedBox(width: 240, child: _buildCategoriesSidebar()),
-                  const SizedBox(width: 16),
-                  
-                  // CENTER - Map + Providers
+                  const SizedBox(width: 20),
                   Expanded(flex: 3, child: _buildCenterContent()),
-                  const SizedBox(width: 16),
-                  
-                  // RIGHT SIDEBAR - Marketplace
-                  SizedBox(width: 300, child: _buildMarketplaceSidebar()),
+                  const SizedBox(width: 20),
+                  SizedBox(width: 280, child: _buildMarketplaceSidebar()),
                 ],
               ),
             ),
           ),
         ),
         
-        // Subcategories overlay (în fața hărții)
+        // Subcategories overlay
         if (_hoveredCategoryIndex != null)
           Positioned(
-            left: 272, // 240 (sidebar) + 16 (padding) + 16 (margin)
-            top: 80 + (_hoveredCategoryIndex! * 56.0),
+            left: 280,
+            top: 100 + (_hoveredCategoryIndex! * 52.0),
             child: _buildSubmenuOverlay(),
           ),
       ],
     );
   }
 
-  // ==================== LEFT SIDEBAR - CATEGORIES ====================
+  // ==================== CATEGORIES SIDEBAR ====================
   Widget _buildCategoriesSidebar() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12)],
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 16)],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Logo
+          // Logo în sidebar
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1565C0), Color(0xFF2DD4BF)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2DD4BF),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.bolt, color: Color(0xFFCDEB45), size: 28),
-                ),
-                const SizedBox(width: 10),
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('LOCO', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFFCC0000), height: 1)),
-                    Text('INSTANT', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF2DD4BF), height: 1.2)),
-                  ],
-                ),
-              ],
-            ),
+            child: Center(child: _buildLogo(iconSize: 28, fontSize: 16)),
           ),
           
-          // Categories
-          ...List.generate(_categories.length, (index) {
-            return _buildCategoryItem(index);
-          }),
+          // Categories list
+          ...List.generate(_categories.length, (index) => _buildCategoryItem(index)),
         ],
       ),
     );
@@ -440,45 +552,58 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hoveredCategoryIndex = index),
-      onExit: (_) => setState(() => _hoveredCategoryIndex = null),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: isHovered ? const Color(0xFFF5F5F5) : Colors.white,
-          border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: isHovered ? const Color(0xFFCC0000) : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                category['icon'],
-                size: 20,
-                color: isHovered ? Colors.white : Colors.grey.shade600,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                category['name'],
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: isHovered ? const Color(0xFFCC0000) : const Color(0xFF333333),
+      onExit: (_) {
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (_hoveredSubcategoryIndex == null && mounted) {
+            setState(() => _hoveredCategoryIndex = null);
+          }
+        });
+      },
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _hoveredCategoryIndex = _hoveredCategoryIndex == index ? null : index;
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: isHovered ? const Color(0xFFF0F9FF) : Colors.white,
+            border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: isHovered ? const Color(0xFF2DD4BF) : Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  category['icon'],
+                  size: 20,
+                  color: isHovered ? Colors.white : Colors.grey.shade600,
                 ),
               ),
-            ),
-            Icon(
-              Icons.chevron_right,
-              size: 20,
-              color: isHovered ? const Color(0xFFCC0000) : Colors.grey.shade400,
-            ),
-          ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  category['name'],
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: isHovered ? const Color(0xFF1565C0) : const Color(0xFF333333),
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: isHovered ? const Color(0xFF2DD4BF) : Colors.grey.shade400,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -491,17 +616,21 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     final subcategories = category['subcategories'] as List<String>;
 
     return MouseRegion(
-      onEnter: (_) => setState(() {}),
-      onExit: (_) => setState(() => _hoveredCategoryIndex = null),
+      onEnter: (_) => setState(() => _hoveredSubcategoryIndex = 0),
+      onExit: (_) {
+        setState(() {
+          _hoveredSubcategoryIndex = null;
+          _hoveredCategoryIndex = null;
+        });
+      },
       child: Container(
-        width: 280,
-        padding: const EdgeInsets.all(8),
+        width: 260,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withOpacity(0.15),
               blurRadius: 20,
               offset: const Offset(4, 4),
             ),
@@ -510,33 +639,59 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Text(
-                category['name'],
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFCC0000),
-                ),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Color(0xFF2DD4BF),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+              ),
+              child: Row(
+                children: [
+                  Icon(category['icon'], color: Colors.white, size: 24),
+                  const SizedBox(width: 10),
+                  Text(
+                    category['name'],
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const Divider(height: 1),
-            ...subcategories.map((sub) {
-              return InkWell(
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Selectat: $sub')),
-                  );
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Text(
-                    sub,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      color: Color(0xFF444444),
+            ...subcategories.asMap().entries.map((entry) {
+              final isSubHovered = _hoveredSubcategoryIndex == entry.key;
+              return MouseRegion(
+                onEnter: (_) => setState(() => _hoveredSubcategoryIndex = entry.key),
+                child: GestureDetector(
+                  onTap: () => _selectSubcategory(category['name'], entry.value),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: isSubHovered ? const Color(0xFFF0F9FF) : Colors.white,
+                      border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isSubHovered ? Icons.arrow_forward : Icons.circle,
+                          size: isSubHovered ? 18 : 6,
+                          color: isSubHovered ? const Color(0xFF2DD4BF) : Colors.grey.shade400,
+                        ),
+                        SizedBox(width: isSubHovered ? 10 : 14),
+                        Expanded(
+                          child: Text(
+                            entry.value,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: isSubHovered ? FontWeight.w600 : FontWeight.normal,
+                              color: isSubHovered ? const Color(0xFF1565C0) : const Color(0xFF555555),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -565,7 +720,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
 
   Widget _buildGoogleMap() {
     return Container(
-      height: 300,
+      height: 280,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 12)],
@@ -575,8 +730,8 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
         children: [
           GoogleMap(
             initialCameraPosition: const CameraPosition(
-              target: _clujCenter,
-              zoom: 13,
+              target: _userLocation,
+              zoom: 14,
             ),
             myLocationEnabled: false,
             zoomControlsEnabled: false,
@@ -588,9 +743,9 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
             },
             markers: {
               const Marker(
-                markerId: MarkerId('cluj'),
-                position: _clujCenter,
-                infoWindow: InfoWindow(title: 'Cluj-Napoca'),
+                markerId: MarkerId('user'),
+                position: _userLocation,
+                infoWindow: InfoWindow(title: 'Tu ești aici'),
               ),
             },
           ),
@@ -599,10 +754,10 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
             top: 16,
             left: 16,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(20),
                 boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8)],
               ),
               child: Row(
@@ -611,11 +766,14 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
                   Container(
                     width: 28,
                     height: 28,
-                    decoration: const BoxDecoration(color: Color(0xFFCC0000), shape: BoxShape.circle),
-                    child: const Icon(Icons.location_on, color: Colors.white, size: 16),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF2DD4BF),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.my_location, color: Colors.white, size: 16),
                   ),
                   const SizedBox(width: 10),
-                  const Text('Cluj-Napoca', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                  const Text('Cluj-Napoca', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
                 ],
               ),
             ),
@@ -627,38 +785,44 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
 
   Widget _buildSearchBar() {
     return Container(
-      height: 56,
+      height: 54,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(27),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12)],
       ),
       child: Row(
         children: [
           const SizedBox(width: 20),
-          Icon(Icons.search, color: Colors.grey.shade500, size: 24),
+          const Icon(Icons.search, color: Color(0xFF2DD4BF), size: 24),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: TextField(
-              style: TextStyle(fontSize: 16),
-              decoration: InputDecoration(
-                hintText: 'Caută servicii sau prestatori...',
-                hintStyle: TextStyle(fontSize: 16),
+              controller: _searchController,
+              style: const TextStyle(fontSize: 15),
+              decoration: const InputDecoration(
+                hintText: 'Ce serviciu cauți?',
+                hintStyle: TextStyle(fontSize: 15, color: Colors.grey),
                 border: InputBorder.none,
               ),
+              onSubmitted: (_) => _searchProvider(),
             ),
           ),
-          Container(
-            margin: const EdgeInsets.all(6),
-            child: ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFCC0000),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+          GestureDetector(
+            onTap: _searchProvider,
+            child: Container(
+              margin: const EdgeInsets.all(5),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1565C0), Color(0xFF2DD4BF)],
+                ),
+                borderRadius: BorderRadius.circular(22),
               ),
-              child: const Text('Căutare', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+              child: const Text(
+                'Căutare',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+              ),
             ),
           ),
         ],
@@ -666,6 +830,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     );
   }
 
+  // ==================== PROVIDERS SECTION - 3 per pagină ====================
   Widget _buildProvidersSection() {
     return Column(
       children: [
@@ -674,28 +839,18 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
             _buildNavigationArrow(Icons.chevron_left, _prevProviderPage),
             const SizedBox(width: 12),
             
+            // 3 Prestatori pe rând
             Expanded(
-              child: Column(
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      Expanded(child: _buildProviderCard(_currentProviders[0])),
-                      const SizedBox(width: 16),
-                      Expanded(child: _buildProviderCard(_currentProviders[1])),
-                      const SizedBox(width: 16),
-                      Expanded(child: _buildProviderCard(_currentProviders[2])),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(child: _buildProviderCard(_currentProviders.length > 3 ? _currentProviders[3] : {})),
-                      const SizedBox(width: 16),
-                      Expanded(child: _buildProviderCard(_currentProviders.length > 4 ? _currentProviders[4] : {})),
-                      const SizedBox(width: 16),
-                      Expanded(child: _buildProviderCard(_currentProviders.length > 5 ? _currentProviders[5] : {})),
-                    ],
-                  ),
+                  if (_currentProviders.isNotEmpty)
+                    Expanded(child: _buildProviderCard(_currentProviders[0])),
+                  const SizedBox(width: 16),
+                  if (_currentProviders.length > 1)
+                    Expanded(child: _buildProviderCard(_currentProviders[1])),
+                  const SizedBox(width: 16),
+                  if (_currentProviders.length > 2)
+                    Expanded(child: _buildProviderCard(_currentProviders[2])),
                 ],
               ),
             ),
@@ -709,13 +864,18 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(_totalPages, (index) {
-            return Container(
-              width: 10,
-              height: 10,
-              margin: const EdgeInsets.symmetric(horizontal: 5),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _currentProviderPage == index ? const Color(0xFFCC0000) : Colors.grey.shade300,
+            return GestureDetector(
+              onTap: () => setState(() => _currentProviderPage = index),
+              child: Container(
+                width: 10,
+                height: 10,
+                margin: const EdgeInsets.symmetric(horizontal: 5),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _currentProviderPage == index 
+                      ? const Color(0xFF2DD4BF) 
+                      : Colors.grey.shade300,
+                ),
               ),
             );
           }),
@@ -729,139 +889,111 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
       onTap: onTap,
       child: Container(
         width: 44,
-        height: 120,
+        height: 200,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 10)],
         ),
-        child: Icon(icon, color: const Color(0xFFCC0000), size: 32),
+        child: Icon(icon, color: const Color(0xFF2DD4BF), size: 32),
       ),
     );
   }
 
   Widget _buildProviderCard(Map<String, dynamic> provider) {
-    if (provider.isEmpty) {
-      return Container(
-        height: 260,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(12),
-        ),
-      );
-    }
-
     return Container(
-      height: 260,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 10)],
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12)],
       ),
       child: Column(
         children: [
+          // Header cu gradient
           Container(
-            height: 80,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade200,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            height: 60,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF1565C0), Color(0xFF2DD4BF)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
             ),
             child: Center(
               child: CircleAvatar(
-                radius: 32,
-                backgroundImage: NetworkImage(provider['photo'] ?? ''),
-                onBackgroundImageError: (_, __) {},
-                child: provider['photo'] == null ? const Icon(Icons.person, size: 32) : null,
+                radius: 36,
+                backgroundColor: Colors.white,
+                child: CircleAvatar(
+                  radius: 33,
+                  backgroundImage: NetworkImage(provider['photo'] ?? ''),
+                  onBackgroundImageError: (_, __) {},
+                ),
               ),
             ),
           ),
           
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          provider['name'] ?? '',
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          const Icon(Icons.star, size: 16, color: Colors.amber),
-                          Text(' ${provider['rating'] ?? 0}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  
-                  Text(
-                    provider['motto'] ?? '',
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: (provider['services'] as List<String>? ?? []).take(3).map((service) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 6,
-                                height: 6,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFCC0000),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  service,
-                                  style: const TextStyle(fontSize: 12, color: Color(0xFF555555)),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
+          // Content
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Text(
+                  provider['name'] ?? '',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.star, size: 16, color: Colors.amber),
+                    Text(' ${provider['rating']}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    Text(' • ${provider['distance']} km', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  provider['motto'] ?? '',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600], fontStyle: FontStyle.italic),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+                
+                // Servicii
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  alignment: WrapAlignment.center,
+                  children: (provider['services'] as List<String>? ?? []).take(3).map((s) => Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0F9FF),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                  
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Comandă pentru ${provider['name']}')),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFCC0000),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      child: const Text('Inițiază comanda', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                    child: Text(s, style: const TextStyle(fontSize: 10, color: Color(0xFF1565C0))),
+                  )).toList(),
+                ),
+                const SizedBox(height: 16),
+                
+                // Buton
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => _initiateOrder(provider),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2DD4BF),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
                     ),
+                    child: const Text('Inițiază comanda', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
@@ -869,18 +1001,18 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     );
   }
 
-  // ==================== RIGHT SIDEBAR - MARKETPLACE ====================
+  // ==================== MARKETPLACE SIDEBAR (fără banner galben) ====================
   Widget _buildMarketplaceSidebar() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12)],
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 16)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header cu titlu și buton căutare
+          // Header
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -888,19 +1020,21 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
                 const Expanded(
                   child: Text(
                     'Marketplace',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Color(0xFF333333)),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF333333)),
                   ),
                 ),
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFCC0000),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: IconButton(
-                    onPressed: () {},
-                    icon: const Icon(Icons.search, color: Colors.white, size: 24),
+                GestureDetector(
+                  onTap: () => context.go('/marketplace'),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF1565C0), Color(0xFF2DD4BF)],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.search, color: Colors.white, size: 22),
                   ),
                 ),
               ],
@@ -910,22 +1044,22 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              'Produse de casă de vânzare',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              'Produse locale de la producători',
+              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           
-          // Products
+          // Products list
           SizedBox(
-            height: 420,
+            height: 380,
             child: MouseRegion(
               onEnter: (_) => _marketplaceScrollTimer?.cancel(),
               onExit: (_) => _startMarketplaceAutoScroll(),
               child: ListView.builder(
                 controller: _marketplaceScrollController,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _marketplaceProducts.length * 10,
+                itemCount: _marketplaceProducts.length * 5,
                 itemBuilder: (context, index) {
                   final product = _marketplaceProducts[index % _marketplaceProducts.length];
                   return _buildMarketplaceProduct(product);
@@ -934,29 +1068,23 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
             ),
           ),
           
-          // Banner
-          Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF4CAF50), Color(0xFF8BC34A)],
+          // Buton vezi toate
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => context.go('/marketplace'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: const BorderSide(color: Color(0xFF2DD4BF)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text(
+                  'Vezi toate produsele',
+                  style: TextStyle(color: Color(0xFF2DD4BF), fontWeight: FontWeight.w600),
+                ),
               ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '🏠 Produse de casă',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Susține producătorii locali!',
-                  style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14),
-                ),
-              ],
             ),
           ),
         ],
@@ -965,61 +1093,65 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
   }
 
   Widget _buildMarketplaceProduct(Map<String, dynamic> product) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              image: product['image'] != null
-                  ? DecorationImage(
-                      image: NetworkImage(product['image']),
-                      fit: BoxFit.cover,
-                    )
-                  : null,
-              color: product['image'] == null ? const Color(0xFFE8F5E9) : null,
+    return GestureDetector(
+      onTap: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Produs: ${product['name']}')),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                image: product['image'] != null
+                    ? DecorationImage(
+                        image: NetworkImage(product['image']),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+                color: product['image'] == null ? const Color(0xFFE8F5E9) : null,
+              ),
             ),
-            child: product['image'] == null
-                ? const Icon(Icons.eco, color: Color(0xFF4CAF50), size: 28)
-                : null,
-          ),
-          const SizedBox(width: 12),
-          
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  product['name'] ?? '',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF333333)),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  product['description'] ?? '',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  product['price'] ?? '',
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF4CAF50)),
-                ),
-              ],
+            const SizedBox(width: 12),
+            
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product['name'] ?? '',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    product['description'] ?? '',
+                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    product['price'] ?? '',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF2DD4BF)),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1044,3 +1176,4 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     );
   }
 }
+
