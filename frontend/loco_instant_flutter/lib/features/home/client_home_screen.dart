@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class ClientHomeScreen extends ConsumerStatefulWidget {
   const ClientHomeScreen({super.key});
@@ -12,77 +13,245 @@ class ClientHomeScreen extends ConsumerStatefulWidget {
 
 class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
   final _searchController = TextEditingController();
-  int _selectedMarketplaceTab = 0;
-  int _currentBannerIndex = 0;
-  final PageController _bannerController = PageController();
-  Timer? _bannerTimer;
+  final ScrollController _marketplaceScrollController = ScrollController();
+  final Completer<GoogleMapController> _mapController = Completer();
+  
+  int? _hoveredCategoryIndex;
+  int _currentProviderPage = 0;
+  Timer? _marketplaceScrollTimer;
 
-  // Categorii servicii
+  // Cluj-Napoca coordinates
+  static const LatLng _clujCenter = LatLng(46.770439, 23.591423);
+
+  // Categorii cu subcategorii (stil eMAG)
   final List<Map<String, dynamic>> _categories = [
-    {'icon': Icons.electrical_services, 'name': 'Electrician'},
-    {'icon': Icons.plumbing, 'name': 'Instalator'},
-    {'icon': Icons.cleaning_services, 'name': 'Curățenie'},
-    {'icon': Icons.handyman, 'name': 'Reparații'},
-    {'icon': Icons.local_shipping, 'name': 'Transport'},
-    {'icon': Icons.yard, 'name': 'Grădinărit'},
-    {'icon': Icons.computer, 'name': 'IT & Tech'},
-    {'icon': Icons.brush, 'name': 'Zugrăveli'},
-    {'icon': Icons.roofing, 'name': 'Acoperiș'},
+    {
+      'icon': Icons.electrical_services,
+      'name': 'Electrician',
+      'subcategories': ['Instalații electrice', 'Reparații prize', 'Tablouri electrice', 'Verificări PRAM', 'Iluminat LED'],
+    },
+    {
+      'icon': Icons.plumbing,
+      'name': 'Instalator',
+      'subcategories': ['Instalații sanitare', 'Desfundare canalizare', 'Montaj centrale', 'Reparații țevi', 'Instalare boiler'],
+    },
+    {
+      'icon': Icons.cleaning_services,
+      'name': 'Curățenie',
+      'subcategories': ['Curățenie generală', 'Curățenie după constructor', 'Curățenie birouri', 'Spălat geamuri', 'Dezinfecție'],
+    },
+    {
+      'icon': Icons.handyman,
+      'name': 'Reparații',
+      'subcategories': ['Reparații mobilă', 'Montaj mobilier', 'Reparații uși', 'Reparații diverse', 'Asamblare IKEA'],
+    },
+    {
+      'icon': Icons.local_shipping,
+      'name': 'Transport',
+      'subcategories': ['Transport marfă', 'Mutări apartamente', 'Transport mobilă', 'Curierat local', 'Transport materiale'],
+    },
+    {
+      'icon': Icons.yard,
+      'name': 'Grădinărit',
+      'subcategories': ['Tuns gazon', 'Întreținere grădină', 'Tăiat copaci', 'Plantat flori', 'Sistem irigații'],
+    },
+    {
+      'icon': Icons.brush,
+      'name': 'Zugrăveli',
+      'subcategories': ['Zugrăvit interior', 'Zugrăvit exterior', 'Vopsit lavabil', 'Tencuieli decorative', 'Glet și șlefuit'],
+    },
+    {
+      'icon': Icons.roofing,
+      'name': 'Acoperiș',
+      'subcategories': ['Reparații acoperiș', 'Montaj țiglă', 'Hidroizolații', 'Jgheaburi și burlane', 'Mansardări'],
+    },
+    {
+      'icon': Icons.computer,
+      'name': 'IT & Tech',
+      'subcategories': ['Reparații PC', 'Instalare software', 'Configurare rețea', 'Recuperare date', 'Service laptop'],
+    },
   ];
 
-  // Anunțuri marketplace
-  final List<Map<String, dynamic>> _announcements = [
-    {'title': 'iPhone 15 Pro Max', 'description': 'Nou, sigilat, garanție 2 ani'},
-    {'title': 'Samsung TV 55" OLED 4K', 'description': 'Smart TV, HDR10+'},
-    {'title': 'MacBook Air M3 15"', 'description': '8GB RAM, 256GB SSD'},
-    {'title': 'Sony WH-1000XM5', 'description': 'Căști wireless, Noise Cancelling'},
-    {'title': 'PlayStation 5 Slim', 'description': 'Edition digitală, nou'},
+  // Prestatori (6 per pagină)
+  final List<Map<String, dynamic>> _allProviders = [
+    {
+      'id': '1',
+      'name': 'Ion Popescu',
+      'photo': 'https://randomuser.me/api/portraits/men/32.jpg',
+      'motto': 'Soluții electrice rapide și sigure',
+      'services': ['Instalații electrice', 'Reparații', 'Verificări'],
+      'rating': 4.8,
+    },
+    {
+      'id': '2',
+      'name': 'Maria Ionescu',
+      'photo': 'https://randomuser.me/api/portraits/women/44.jpg',
+      'motto': 'Curățenie impecabilă, prețuri corecte',
+      'services': ['Curățenie generală', 'După constructor', 'Birouri'],
+      'rating': 4.9,
+    },
+    {
+      'id': '3',
+      'name': 'Vasile Mureșan',
+      'photo': 'https://randomuser.me/api/portraits/men/52.jpg',
+      'motto': 'Instalații și reparații non-stop',
+      'services': ['Instalații sanitare', 'Desfundări', 'Centrale'],
+      'rating': 4.7,
+    },
+    {
+      'id': '4',
+      'name': 'Alex Radu',
+      'photo': 'https://randomuser.me/api/portraits/men/22.jpg',
+      'motto': 'Reparăm orice, oricând',
+      'services': ['Mobilă', 'Uși', 'Montaj IKEA'],
+      'rating': 4.6,
+    },
+    {
+      'id': '5',
+      'name': 'George Transport',
+      'photo': 'https://randomuser.me/api/portraits/men/45.jpg',
+      'motto': 'Transport rapid în Cluj',
+      'services': ['Mutări', 'Marfă', 'Curierat'],
+      'rating': 4.5,
+    },
+    {
+      'id': '6',
+      'name': 'Elena Grădini',
+      'photo': 'https://randomuser.me/api/portraits/women/28.jpg',
+      'motto': 'Grădina ta, pasiunea noastră',
+      'services': ['Gazon', 'Întreținere', 'Irigații'],
+      'rating': 4.8,
+    },
+    // Pagina 2
+    {
+      'id': '7',
+      'name': 'Andrei Zugrav',
+      'photo': 'https://randomuser.me/api/portraits/men/55.jpg',
+      'motto': 'Zugrăveli de calitate superioară',
+      'services': ['Interior', 'Exterior', 'Decorative'],
+      'rating': 4.9,
+    },
+    {
+      'id': '8',
+      'name': 'Mihai Acoperiș',
+      'photo': 'https://randomuser.me/api/portraits/men/62.jpg',
+      'motto': 'Acoperiș sigur, casă fericită',
+      'services': ['Reparații', 'Țiglă', 'Hidroizolații'],
+      'rating': 4.7,
+    },
+    {
+      'id': '9',
+      'name': 'Dan IT Expert',
+      'photo': 'https://randomuser.me/api/portraits/men/35.jpg',
+      'motto': 'Rezolvăm orice problemă IT',
+      'services': ['PC', 'Laptop', 'Rețele'],
+      'rating': 4.8,
+    },
+    {
+      'id': '10',
+      'name': 'Ana Curățenie Pro',
+      'photo': 'https://randomuser.me/api/portraits/women/33.jpg',
+      'motto': 'Strălucire garantată',
+      'services': ['Apartamente', 'Case', 'Birouri'],
+      'rating': 4.9,
+    },
+    {
+      'id': '11',
+      'name': 'Florin Electric',
+      'photo': 'https://randomuser.me/api/portraits/men/42.jpg',
+      'motto': 'Electrician autorizat ANRE',
+      'services': ['Autorizat', 'Verificări', 'Avarii'],
+      'rating': 4.6,
+    },
+    {
+      'id': '12',
+      'name': 'Cristina Home',
+      'photo': 'https://randomuser.me/api/portraits/women/55.jpg',
+      'motto': 'Casa ta în mâini bune',
+      'services': ['Menaj', 'Spălat', 'Călcat'],
+      'rating': 4.7,
+    },
   ];
+
+  // Produse marketplace (scroll vertical)
+  final List<Map<String, dynamic>> _marketplaceProducts = [
+    {'name': 'Miere de albine 100% naturală', 'description': 'Direct de la producător, 1kg', 'price': '45 RON'},
+    {'name': 'Dulceață de căpșuni', 'description': 'Făcută în casă, 350g', 'price': '25 RON'},
+    {'name': 'Ouă de țară proaspete', 'description': 'Găini crescute liber, 30 buc', 'price': '35 RON'},
+    {'name': 'Brânză de burduf', 'description': 'Tradițională, 500g', 'price': '40 RON'},
+    {'name': 'Țuică de prune', 'description': 'Artizanală, 1L', 'price': '60 RON'},
+    {'name': 'Zacuscă de casă', 'description': 'Rețetă tradițională, 500g', 'price': '30 RON'},
+    {'name': 'Pâine de casă', 'description': 'Cu maia naturală', 'price': '15 RON'},
+    {'name': 'Gem de zmeură', 'description': 'Fără conservanți, 350g', 'price': '28 RON'},
+    {'name': 'Unt de țară', 'description': 'Din lapte de vacă, 250g', 'price': '22 RON'},
+    {'name': 'Smântână de casă', 'description': 'Proaspătă, 500g', 'price': '18 RON'},
+  ];
+
+  List<Map<String, dynamic>> get _currentProviders {
+    final start = _currentProviderPage * 6;
+    final end = (start + 6).clamp(0, _allProviders.length);
+    return _allProviders.sublist(start, end);
+  }
+
+  int get _totalPages => (_allProviders.length / 6).ceil();
 
   @override
   void initState() {
     super.initState();
-    _startBannerTimer();
+    _startMarketplaceAutoScroll();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
-    _bannerController.dispose();
-    _bannerTimer?.cancel();
+    _marketplaceScrollController.dispose();
+    _marketplaceScrollTimer?.cancel();
     super.dispose();
   }
 
-  void _startBannerTimer() {
-    _bannerTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
-      if (_bannerController.hasClients && mounted) {
-        final nextPage = (_currentBannerIndex + 1) % 3;
-        _bannerController.animateToPage(
-          nextPage,
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeInOut,
-        );
+  void _startMarketplaceAutoScroll() {
+    _marketplaceScrollTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+      if (_marketplaceScrollController.hasClients) {
+        final maxScroll = _marketplaceScrollController.position.maxScrollExtent;
+        final currentScroll = _marketplaceScrollController.offset;
+        
+        if (currentScroll >= maxScroll) {
+          _marketplaceScrollController.jumpTo(0);
+        } else {
+          _marketplaceScrollController.jumpTo(currentScroll + 0.5);
+        }
       }
     });
+  }
+
+  void _nextProviderPage() {
+    if (_currentProviderPage < _totalPages - 1) {
+      setState(() => _currentProviderPage++);
+    } else {
+      setState(() => _currentProviderPage = 0);
+    }
+  }
+
+  void _prevProviderPage() {
+    if (_currentProviderPage > 0) {
+      setState(() => _currentProviderPage--);
+    } else {
+      setState(() => _currentProviderPage = _totalPages - 1);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 768;
-    final isTablet = screenWidth >= 768 && screenWidth < 1024;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: Column(
         children: [
-          // Header
           _buildHeader(),
-          // Main Content
           Expanded(
-            child: isMobile 
-                ? _buildMobileLayout() 
-                : _buildDesktopLayout(isTablet),
+            child: isMobile ? _buildMobileLayout() : _buildDesktopLayout(),
           ),
         ],
       ),
@@ -96,18 +265,14 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       child: Row(
         children: [
-          // Logo
           _buildLogo(),
           const SizedBox(width: 32),
-          
-          // Search bar
           Expanded(
             child: Container(
               height: 44,
               decoration: BoxDecoration(
                 color: const Color(0xFF333333),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFF444444)),
               ),
               child: Row(
                 children: [
@@ -119,7 +284,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
                       controller: _searchController,
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
-                        hintText: 'Începe o nouă căutare',
+                        hintText: 'Caută servicii sau prestatori...',
                         hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
                         border: InputBorder.none,
                       ),
@@ -127,25 +292,23 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
                   ),
                   Container(
                     margin: const EdgeInsets.all(4),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     decoration: BoxDecoration(
                       color: const Color(0xFFCC0000),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: const Icon(Icons.search, color: Colors.white, size: 20),
+                    child: const Text('Căutare', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                   ),
                 ],
               ),
             ),
           ),
           const SizedBox(width: 32),
-          
-          // Right icons
           _buildHeaderIcon(Icons.person_outline, 'Contul meu'),
           const SizedBox(width: 20),
           _buildHeaderIcon(Icons.favorite_border, 'Favorite'),
           const SizedBox(width: 20),
-          _buildHeaderIcon(Icons.shopping_cart_outlined, 'Coșul meu'),
+          _buildHeaderIcon(Icons.shopping_cart_outlined, 'Coș'),
         ],
       ),
     );
@@ -154,80 +317,52 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
   Widget _buildHeaderIcon(IconData icon, String label) {
     return Row(
       children: [
-        Icon(icon, color: Colors.white, size: 22),
+        Icon(icon, color: Colors.white, size: 20),
         const SizedBox(width: 6),
-        Text(
-          label,
-          style: const TextStyle(color: Colors.white, fontSize: 13),
-        ),
-        const Icon(Icons.arrow_drop_down, color: Colors.white70, size: 18),
+        Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
       ],
     );
   }
 
   Widget _buildLogo() {
     return Row(
-      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 36,
-          height: 36,
+          width: 32,
+          height: 32,
           decoration: BoxDecoration(
             color: const Color(0xFF2DD4BF),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(6),
           ),
-          child: const Icon(Icons.bolt, color: Color(0xFFCDEB45), size: 24),
+          child: const Icon(Icons.bolt, color: Color(0xFFCDEB45), size: 20),
         ),
         const SizedBox(width: 8),
-        const Text(
-          'LOCO',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w900,
-            color: Color(0xFFCC0000),
-          ),
-        ),
-        const Text(
-          ' INSTANT',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w900,
-            color: Color(0xFF2DD4BF),
-          ),
-        ),
+        const Text('LOCO', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFFCC0000))),
+        const Text(' INSTANT', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF2DD4BF))),
       ],
     );
   }
 
-  // ==================== DESKTOP LAYOUT (3 COLUMNS) ====================
-  Widget _buildDesktopLayout(bool isTablet) {
+  // ==================== DESKTOP LAYOUT ====================
+  Widget _buildDesktopLayout() {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 1440),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // LEFT SIDEBAR - 20%
-              SizedBox(
-                width: isTablet ? 180 : 240,
-                child: _buildSidebarLeft(),
-              ),
-              const SizedBox(width: 20),
+              // LEFT SIDEBAR - Categories with hover submenu
+              SizedBox(width: 220, child: _buildCategoriesSidebar()),
+              const SizedBox(width: 16),
               
-              // CENTER CONTENT - 50-60%
-              Expanded(
-                flex: 3,
-                child: _buildMainContent(isTablet),
-              ),
-              const SizedBox(width: 20),
+              // CENTER - Map + Providers
+              Expanded(flex: 3, child: _buildCenterContent()),
+              const SizedBox(width: 16),
               
-              // RIGHT SIDEBAR - 20-30%
-              SizedBox(
-                width: isTablet ? 220 : 300,
-                child: _buildMarketPlaceSidebar(),
-              ),
+              // RIGHT SIDEBAR - MarketPlace with auto-scroll
+              SizedBox(width: 280, child: _buildMarketPlaceSidebar()),
             ],
           ),
         ),
@@ -235,231 +370,221 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     );
   }
 
-  // ==================== SIDEBAR LEFT (Logo + Categories) ====================
-  Widget _buildSidebarLeft() {
+  // ==================== LEFT SIDEBAR - CATEGORIES WITH HOVER ====================
+  Widget _buildCategoriesSidebar() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Logo/Sigla
+          // Logo
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: Colors.grey.shade200),
-              ),
+              border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
                     color: const Color(0xFF2DD4BF),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.bolt, color: Color(0xFFCDEB45), size: 28),
+                  child: const Icon(Icons.bolt, color: Color(0xFFCDEB45), size: 24),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'LOCO',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFFCC0000),
-                        height: 1,
-                      ),
-                    ),
-                    Text(
-                      'INSTANT',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF2DD4BF),
-                        height: 1.2,
-                      ),
-                    ),
+                    Text('LOCO', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFFCC0000), height: 1)),
+                    Text('INSTANT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF2DD4BF), height: 1.2)),
                   ],
                 ),
               ],
             ),
           ),
           
-          // Categorii Header
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: Colors.grey.shade50,
-            child: const Text(
-              'CATEGORII',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF666666),
-                letterSpacing: 1,
-              ),
-            ),
-          ),
-          
-          // Lista categorii
+          // Categories
           ...List.generate(_categories.length, (index) {
-            final category = _categories[index];
-            return _buildCategoryItem(category['icon'], category['name']);
+            return _buildCategoryItemWithSubmenu(index);
           }),
         ],
       ),
     );
   }
 
-  Widget _buildCategoryItem(IconData icon, String name) {
-    return InkWell(
-      onTap: () {},
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: Colors.grey.shade100),
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, size: 18, color: const Color(0xFF666666)),
+  Widget _buildCategoryItemWithSubmenu(int index) {
+    final category = _categories[index];
+    final isHovered = _hoveredCategoryIndex == index;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hoveredCategoryIndex = index),
+      onExit: (_) => setState(() => _hoveredCategoryIndex = null),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Category item
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: isHovered ? const Color(0xFFF5F5F5) : Colors.white,
+              border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
             ),
-            const SizedBox(width: 12),
-            Expanded(
+            child: Row(
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: isHovered ? const Color(0xFFCC0000) : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Icon(
+                    category['icon'],
+                    size: 16,
+                    color: isHovered ? Colors.white : Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    category['name'],
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: isHovered ? const Color(0xFFCC0000) : const Color(0xFF333333),
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Submenu (appears on hover)
+          if (isHovered)
+            Positioned(
+              left: 218,
+              top: 0,
+              child: _buildSubmenu(category['subcategories'] as List<String>),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubmenu(List<String> subcategories) {
+    return Container(
+      width: 200,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 12,
+            offset: const Offset(4, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: subcategories.map((sub) {
+          return InkWell(
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Selectat: $sub')),
+              );
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+              ),
               child: Text(
-                name,
+                sub,
                 style: const TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFF333333),
+                  fontSize: 12,
+                  color: Color(0xFF555555),
                 ),
               ),
             ),
-            Icon(Icons.chevron_right, size: 18, color: Colors.grey.shade400),
-          ],
-        ),
+          );
+        }).toList(),
       ),
     );
   }
 
-  // ==================== MAIN CONTENT (Center Column) ====================
-  Widget _buildMainContent(bool isTablet) {
+  // ==================== CENTER CONTENT - MAP + PROVIDERS ====================
+  Widget _buildCenterContent() {
     return SingleChildScrollView(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Harta Cluj-Napoca
-          _buildMapCard(),
-          const SizedBox(height: 20),
+          // Google Maps Cluj-Napoca
+          _buildGoogleMap(),
+          const SizedBox(height: 16),
           
-          // 2. Bara de căutare servicii
+          // Search bar
           _buildSearchBar(),
-          const SizedBox(height: 24),
-          
-          // 3. Primul rând de carduri (3 coloane)
-          _buildServiceCardsRow(isTablet),
           const SizedBox(height: 20),
           
-          // 4. Motto + Buton Inițiază comanda
-          _buildMottoSection(),
-          const SizedBox(height: 20),
-          
-          // 5. Al doilea rând de carduri (3 coloane)
-          _buildServiceCardsRow(isTablet),
+          // Providers grid with arrows
+          _buildProvidersSection(),
         ],
       ),
     );
   }
 
-  Widget _buildMapCard() {
+  Widget _buildGoogleMap() {
     return Container(
       height: 280,
       decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 10)],
       ),
+      clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
-          // Map placeholder
-          Container(
-            width: double.infinity,
-            height: double.infinity,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8E8E8),
-              borderRadius: BorderRadius.circular(12),
+          GoogleMap(
+            initialCameraPosition: const CameraPosition(
+              target: _clujCenter,
+              zoom: 13,
             ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.map_outlined, size: 64, color: Colors.grey.shade400),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Harta Cluj-Napoca',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF555555),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '(Google Maps – în curând)',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade500,
-                    ),
-                  ),
-                ],
+            myLocationEnabled: false,
+            zoomControlsEnabled: false,
+            mapToolbarEnabled: false,
+            onMapCreated: (controller) {
+              if (!_mapController.isCompleted) {
+                _mapController.complete(controller);
+              }
+            },
+            markers: {
+              const Marker(
+                markerId: MarkerId('cluj'),
+                position: _clujCenter,
+                infoWindow: InfoWindow(title: 'Cluj-Napoca'),
               ),
-            ),
+            },
           ),
           
           // Location badge
           Positioned(
-            top: 16,
-            left: 16,
+            top: 12,
+            left: 12,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8)],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -467,20 +592,11 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
                   Container(
                     width: 24,
                     height: 24,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFCC0000),
-                      shape: BoxShape.circle,
-                    ),
+                    decoration: const BoxDecoration(color: Color(0xFFCC0000), shape: BoxShape.circle),
                     child: const Icon(Icons.location_on, color: Colors.white, size: 14),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
-                    'Cluj-Napoca',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
+                  const Text('Cluj-Napoca', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                 ],
               ),
             ),
@@ -492,49 +608,36 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
 
   Widget _buildSearchBar() {
     return Container(
-      height: 52,
+      height: 48,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(26),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10)],
       ),
       child: Row(
         children: [
-          const SizedBox(width: 20),
-          Icon(Icons.search, color: Colors.grey.shade500, size: 22),
-          const SizedBox(width: 12),
-          Expanded(
+          const SizedBox(width: 18),
+          Icon(Icons.search, color: Colors.grey.shade500),
+          const SizedBox(width: 10),
+          const Expanded(
             child: TextField(
               decoration: InputDecoration(
                 hintText: 'Caută servicii sau prestatori...',
-                hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
                 border: InputBorder.none,
               ),
             ),
           ),
           Container(
-            margin: const EdgeInsets.all(6),
+            margin: const EdgeInsets.all(4),
             child: ElevatedButton(
               onPressed: () {},
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFCC0000),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               ),
-              child: const Text(
-                'Căutare',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-              ),
+              child: const Text('Căutare', style: TextStyle(fontWeight: FontWeight.w600)),
             ),
           ),
         ],
@@ -542,125 +645,213 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     );
   }
 
-  Widget _buildServiceCardsRow(bool isTablet) {
-    return Row(
+  Widget _buildProvidersSection() {
+    return Column(
       children: [
-        Expanded(child: _buildServiceCard('POZĂ')),
-        const SizedBox(width: 16),
-        Expanded(child: _buildServiceCard('POZĂ')),
-        const SizedBox(width: 16),
-        Expanded(child: _buildServiceCard('POZĂ')),
+        // Providers grid with navigation arrows
+        Row(
+          children: [
+            // Left arrow
+            _buildNavigationArrow(Icons.chevron_left, _prevProviderPage),
+            const SizedBox(width: 8),
+            
+            // Providers grid (3x2)
+            Expanded(
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(child: _buildProviderCard(_currentProviders[0])),
+                      const SizedBox(width: 12),
+                      Expanded(child: _buildProviderCard(_currentProviders[1])),
+                      const SizedBox(width: 12),
+                      Expanded(child: _buildProviderCard(_currentProviders[2])),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(child: _buildProviderCard(_currentProviders.length > 3 ? _currentProviders[3] : {})),
+                      const SizedBox(width: 12),
+                      Expanded(child: _buildProviderCard(_currentProviders.length > 4 ? _currentProviders[4] : {})),
+                      const SizedBox(width: 12),
+                      Expanded(child: _buildProviderCard(_currentProviders.length > 5 ? _currentProviders[5] : {})),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            
+            // Right arrow
+            _buildNavigationArrow(Icons.chevron_right, _nextProviderPage),
+          ],
+        ),
+        
+        // Page indicator
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(_totalPages, (index) {
+            return Container(
+              width: 8,
+              height: 8,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _currentProviderPage == index ? const Color(0xFFCC0000) : Colors.grey.shade300,
+              ),
+            );
+          }),
+        ),
       ],
     );
   }
 
-  Widget _buildServiceCard(String label) {
-    return Container(
-      height: 160,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+  Widget _buildNavigationArrow(IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
       child: Container(
+        width: 36,
+        height: 100,
         decoration: BoxDecoration(
-          color: const Color(0xFFF0F0F0),
-          borderRadius: BorderRadius.circular(12),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8)],
         ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(Icons.image, size: 28, color: Colors.grey.shade500),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-            ],
-          ),
-        ),
+        child: Icon(icon, color: const Color(0xFFCC0000), size: 28),
       ),
     );
   }
 
-  Widget _buildMottoSection() {
+  Widget _buildProviderCard(Map<String, dynamic> provider) {
+    if (provider.isEmpty) {
+      return Container(
+        height: 220,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(10),
+        ),
+      );
+    }
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      height: 220,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8)],
       ),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Motto-ul prestatorului',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF333333),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Soluții rapide și profesioniste pentru casa ta. Calitate garantată.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ],
+          // Photo
+          Container(
+            height: 70,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+            ),
+            child: Center(
+              child: CircleAvatar(
+                radius: 28,
+                backgroundImage: NetworkImage(provider['photo'] ?? ''),
+                onBackgroundImageError: (_, __) {},
+                child: provider['photo'] == null ? const Icon(Icons.person) : null,
+              ),
             ),
           ),
-          const SizedBox(width: 20),
-          ElevatedButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Inițiază comandă...')),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFCC0000),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+          
+          // Content
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Name & Rating
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          provider['name'] ?? '',
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          const Icon(Icons.star, size: 12, color: Colors.amber),
+                          Text(' ${provider['rating'] ?? 0}', style: const TextStyle(fontSize: 10)),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  
+                  // Motto
+                  Text(
+                    provider['motto'] ?? '',
+                    style: TextStyle(fontSize: 10, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  
+                  // Services
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: (provider['services'] as List<String>? ?? []).take(3).map((service) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 2),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 4,
+                                height: 4,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFCC0000),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  service,
+                                  style: const TextStyle(fontSize: 9, color: Color(0xFF555555)),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  
+                  // Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Comandă pentru ${provider['name']}')),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFCC0000),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      ),
+                      child: const Text('Inițiază comanda', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ],
               ),
-              elevation: 2,
-            ),
-            child: const Text(
-              'Inițiază comanda',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
             ),
           ),
         ],
@@ -668,206 +859,131 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     );
   }
 
-  // ==================== MARKETPLACE SIDEBAR (Right Column) ====================
+  // ==================== RIGHT SIDEBAR - MARKETPLACE AUTO-SCROLL ====================
   Widget _buildMarketPlaceSidebar() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title
+          // Header
           const Padding(
-            padding: EdgeInsets.all(20),
+            padding: EdgeInsets.all(16),
             child: Text(
               'Market Place',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF333333),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF333333)),
+            ),
+          ),
+          
+          // Subtitle
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'Produse de casă de vânzare',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
+          ),
+          const SizedBox(height: 12),
+          
+          // Auto-scrolling products
+          SizedBox(
+            height: 400,
+            child: MouseRegion(
+              onEnter: (_) => _marketplaceScrollTimer?.cancel(),
+              onExit: (_) => _startMarketplaceAutoScroll(),
+              child: ListView.builder(
+                controller: _marketplaceScrollController,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: _marketplaceProducts.length * 10, // Repeat for infinite scroll effect
+                itemBuilder: (context, index) {
+                  final product = _marketplaceProducts[index % _marketplaceProducts.length];
+                  return _buildMarketplaceProduct(product);
+                },
               ),
             ),
           ),
           
-          // Tabs
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
+          // Banner
+          Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF4CAF50), Color(0xFF8BC34A)],
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildTab('Lista anunțuri', 0),
-                const SizedBox(width: 10),
-                _buildTab('Căutare', 1),
+                const Text(
+                  '🏠 Produse de casă',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Susține producătorii locali!',
+                  style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 11),
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          
-          // Announcements list
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              children: _announcements.map((announcement) {
-                return _buildAnnouncementCard(announcement);
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 20),
-          
-          // Banner
-          _buildBanner(),
-          const SizedBox(height: 20),
         ],
       ),
     );
   }
 
-  Widget _buildTab(String text, int index) {
-    final isSelected = _selectedMarketplaceTab == index;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedMarketplaceTab = index),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFCC0000) : const Color(0xFFF5F5F5),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: isSelected ? Colors.white : const Color(0xFF666666),
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAnnouncementCard(Map<String, dynamic> announcement) {
+  Widget _buildMarketplaceProduct(Map<String, dynamic> product) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Row(
         children: [
-          // Image placeholder
+          // Product image placeholder
           Container(
-            width: 56,
-            height: 56,
+            width: 50,
+            height: 50,
             decoration: BoxDecoration(
-              color: const Color(0xFFF0F0F0),
+              color: const Color(0xFFE8F5E9),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(Icons.image, color: Colors.grey.shade400, size: 24),
+            child: const Icon(Icons.eco, color: Color(0xFF4CAF50), size: 24),
           ),
-          const SizedBox(width: 12),
-          // Text
+          const SizedBox(width: 10),
+          
+          // Product info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  announcement['title'],
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF333333),
-                  ),
+                  product['name'] ?? '',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF333333)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  product['description'] ?? '',
+                  style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  announcement['description'],
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  product['price'] ?? '',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF4CAF50)),
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBanner() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      height: 100,
-      child: PageView(
-        controller: _bannerController,
-        onPageChanged: (index) => setState(() => _currentBannerIndex = index),
-        children: [
-          _buildBannerSlide(
-            'Banner care rulează',
-            'Cu oferte săptămânale ieși mereu pe PLUS',
-            const Color(0xFF4CAF50),
-          ),
-          _buildBannerSlide(
-            'Transport Gratuit',
-            'La comenzi peste 200 RON',
-            const Color(0xFF2196F3),
-          ),
-          _buildBannerSlide(
-            'Oferte Speciale',
-            'Reduceri de până la 50%',
-            const Color(0xFFFF9800),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBannerSlide(String title, String subtitle, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
-              fontSize: 12,
             ),
           ),
         ],
@@ -881,44 +997,15 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Center content first
-          _buildMapCard(),
+          _buildGoogleMap(),
           const SizedBox(height: 16),
           _buildSearchBar(),
           const SizedBox(height: 20),
-          
-          // Cards grid (2 columns on mobile)
-          Row(
-            children: [
-              Expanded(child: _buildServiceCard('POZĂ')),
-              const SizedBox(width: 12),
-              Expanded(child: _buildServiceCard('POZĂ')),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _buildServiceCard('POZĂ'),
-          const SizedBox(height: 16),
-          
-          _buildMottoSection(),
-          const SizedBox(height: 16),
-          
-          Row(
-            children: [
-              Expanded(child: _buildServiceCard('POZĂ')),
-              const SizedBox(width: 12),
-              Expanded(child: _buildServiceCard('POZĂ')),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _buildServiceCard('POZĂ'),
+          _buildProvidersSection(),
           const SizedBox(height: 24),
-          
-          // MarketPlace
           _buildMarketPlaceSidebar(),
           const SizedBox(height: 24),
-          
-          // Categories
-          _buildSidebarLeft(),
+          _buildCategoriesSidebar(),
         ],
       ),
     );
