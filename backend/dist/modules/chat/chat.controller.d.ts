@@ -6,7 +6,7 @@ export declare class ChatController {
         success: boolean;
         message: {
             senderId: number;
-            senderRole: "customer" | "system" | "provider";
+            senderRole: "provider" | "customer" | "system";
             orderId: number;
             content: string;
             messageType?: "text" | "image" | "video" | "audio" | "file" | "location" | "system" | "price_quote" | "status_update";

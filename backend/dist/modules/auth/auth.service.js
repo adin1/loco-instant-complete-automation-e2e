@@ -30,53 +30,67 @@ let AuthService = class AuthService {
                 role: 'customer',
             },
         });
-        return newUser;
+        return {
+            id: Number(newUser.id),
+            email: newUser.email,
+            name: newUser.name,
+            role: newUser.role,
+        };
     }
     async validateUser(email, password) {
         const user = await this.prisma.user.findUnique({ where: { email } });
         if (!user) {
             throw new Error('User not found');
         }
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            throw new Error('Invalid password');
+        if (user.password) {
+            const isMatch = await bcrypt.compare(password, user.password);
+            if (isMatch) {
+                return user;
+            }
         }
-        return user;
+        if (user.password_hash) {
+            const isMatch = await bcrypt.compare(password, user.password_hash);
+            if (isMatch) {
+                return user;
+            }
+        }
+        throw new Error('Invalid password');
+    }
+    serializeUser(user) {
+        return {
+            id: Number(user.id),
+            email: user.email,
+            name: user.name,
+            role: user.role,
+        };
     }
     async login(email, password) {
-        if (process.env.NODE_ENV !== 'production') {
-            let user = await this.prisma.user.findUnique({ where: { email } });
-            if (!user) {
-                const demoUser = {
-                    id: BigInt(-999),
-                    email,
-                    password: '',
-                    name: email.split('@')[0],
-                    role: 'customer',
-                };
-                const payload = { sub: Number(demoUser.id), email: demoUser.email };
-                const token = jwt.sign(payload, process.env.JWT_SECRET || 'local_secret_key', { expiresIn: '7d' });
-                return {
-                    access_token: token,
-                    user: demoUser,
-                };
-            }
-            const payload = { sub: Number(user.id), email: user.email };
+        try {
+            const user = await this.validateUser(email, password);
+            const userId = Number(user.id);
+            const payload = { sub: userId, email: user.email };
             const token = jwt.sign(payload, process.env.JWT_SECRET || 'local_secret_key', { expiresIn: '7d' });
             return {
                 access_token: token,
-                user,
+                user: this.serializeUser(user),
             };
         }
-        const user = await this.validateUser(email, password);
-        const payload = { sub: user.id, email: user.email };
-        const token = jwt.sign(payload, process.env.JWT_SECRET || 'local_secret_key', {
-            expiresIn: '7d',
-        });
-        return {
-            access_token: token,
-            user,
-        };
+        catch (error) {
+            if (process.env.NODE_ENV !== 'production') {
+                const user = await this.prisma.user.findUnique({ where: { email } });
+                if (user) {
+                    console.log(`[DEV MODE] Login fallback for: ${email}`);
+                    const userId = Number(user.id);
+                    const payload = { sub: userId, email: user.email };
+                    const token = jwt.sign(payload, process.env.JWT_SECRET || 'local_secret_key', { expiresIn: '7d' });
+                    return {
+                        access_token: token,
+                        user: this.serializeUser(user),
+                    };
+                }
+            }
+            throw error;
+        }
     }
 };
 exports.AuthService = AuthService;

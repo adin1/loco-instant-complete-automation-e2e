@@ -20,12 +20,17 @@ export class AuthService {
         email,
         password: hashedPassword,
         name: name || email.split('@')[0],
-        tenant_id: BigInt(1), // Default tenant
+        tenant_id: BigInt(1),
         role: 'customer',
       },
     });
 
-    return newUser;
+    return {
+      id: Number(newUser.id),
+      email: newUser.email,
+      name: newUser.name,
+      role: newUser.role,
+    };
   }
 
   // Validează email + parolă
@@ -35,45 +40,43 @@ export class AuthService {
       throw new Error('User not found');
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      throw new Error('Invalid password');
+    // Verifică parola cu bcrypt
+    if (user.password) {
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (isMatch) {
+        return user;
+      }
     }
 
-    return user;
+    // Fallback: verifică și în password_hash dacă există
+    if (user.password_hash) {
+      const isMatch = await bcrypt.compare(password, user.password_hash);
+      if (isMatch) {
+        return user;
+      }
+    }
+
+    throw new Error('Invalid password');
+  }
+
+  // Helper pentru a converti user la format serializabil
+  private serializeUser(user: any) {
+    return {
+      id: Number(user.id),
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    };
   }
 
   // Login + generare token JWT
   async login(email: string, password: string) {
-    // Demo mode - acceptă ORICE parolă în development
-    if (process.env.NODE_ENV !== 'production') {
-      // Caută utilizatorul în DB
-      let user = await this.prisma.user.findUnique({ where: { email } });
-      
-      if (!user) {
-        // Returnează un user demo fără a-l crea în DB
-        const demoUser = {
-          id: BigInt(-999),
-          email,
-          password: '',
-          name: email.split('@')[0],
-          role: 'customer',
-        } as any;
+    try {
+      // Încearcă autentificarea normală
+      const user = await this.validateUser(email, password);
+      const userId = Number(user.id);
 
-        const payload = { sub: Number(demoUser.id), email: demoUser.email };
-        const token = jwt.sign(
-          payload,
-          process.env.JWT_SECRET || 'local_secret_key',
-          { expiresIn: '7d' },
-        );
-
-        return {
-          access_token: token,
-          user: demoUser,
-        };
-      }
-
-      const payload = { sub: Number(user.id), email: user.email };
+      const payload = { sub: userId, email: user.email };
       const token = jwt.sign(
         payload,
         process.env.JWT_SECRET || 'local_secret_key',
@@ -82,24 +85,32 @@ export class AuthService {
 
       return {
         access_token: token,
-        user,
+        user: this.serializeUser(user),
       };
+    } catch (error) {
+      // În development, permite login doar cu verificarea existenței utilizatorului
+      if (process.env.NODE_ENV !== 'production') {
+        const user = await this.prisma.user.findUnique({ where: { email } });
+        
+        if (user) {
+          console.log(`[DEV MODE] Login fallback for: ${email}`);
+          const userId = Number(user.id);
+          
+          const payload = { sub: userId, email: user.email };
+          const token = jwt.sign(
+            payload,
+            process.env.JWT_SECRET || 'local_secret_key',
+            { expiresIn: '7d' },
+          );
+
+          return {
+            access_token: token,
+            user: this.serializeUser(user),
+          };
+        }
+      }
+
+      throw error;
     }
-
-    const user = await this.validateUser(email, password);
-
-    const payload = { sub: user.id, email: user.email };
-    const token = jwt.sign(
-      payload,
-      process.env.JWT_SECRET || 'local_secret_key',
-      {
-        expiresIn: '7d',
-      },
-    );
-
-    return {
-      access_token: token,
-      user,
-    };
   }
 }
