@@ -626,18 +626,25 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
                           margin: const EdgeInsets.all(4),
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: const Color(0xFFE53935),
                             borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.red.withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.search, color: Color(0xFF1565C0), size: 18),
+                              Icon(Icons.search, color: Colors.white, size: 18),
                               SizedBox(width: 6),
                               Text(
                                 'Caută',
                                 style: TextStyle(
-                                  color: Color(0xFF1565C0),
+                                  color: Colors.white,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,
                                 ),
