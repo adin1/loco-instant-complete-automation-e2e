@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/animated_widgets.dart';
 import '../../widgets/animated_promo_presentation.dart';
-import '../../widgets/theme_version_selector.dart';
 import '../../providers/provider_state.dart' show UserRole, userRoleProvider, ProviderType, providerTypeProvider;
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -154,8 +153,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       : _buildMobileLayout(),
             ),
             
-            // Design Version Selector Button
-            const VersionSelectorButton(),
           ],
         ),
       ),
@@ -163,67 +160,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   // ══════════════════════════════════════════════════════════════
-  // BACKGROUND EFFECTS - Glow effects inspirate de Linear
+  // BACKGROUND EFFECTS - Simple subtle glow
   // ══════════════════════════════════════════════════════════════
   Widget _buildBackgroundEffects() {
-    return Stack(
-      children: [
-        // Top-left glow
-        Positioned(
-          top: -100,
-          left: -100,
-          child: Container(
-            width: 400,
-            height: 400,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  const Color(0xFF2DD4BF).withOpacity(0.15),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-        // Bottom-right glow
-        Positioned(
-          bottom: -150,
-          right: -150,
-          child: Container(
-            width: 500,
-            height: 500,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  const Color(0xFF3B82F6).withOpacity(0.1),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-        // Center accent
-        Positioned(
-          top: 200,
-          right: 100,
-          child: Container(
-            width: 300,
-            height: 300,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  const Color(0xFF8B5CF6).withOpacity(0.08),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
+    return const SizedBox.shrink(); // No background effects
   }
 
   // ══════════════════════════════════════════════════════════════
@@ -272,7 +212,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 600),
-                child: const AnimatedPromoPresentation(height: 340),
+                child: const AnimatedPromoPresentation(height: 240),
               ),
             ),
             const SizedBox(height: 40),
@@ -298,7 +238,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             _buildCompactHeader(),
             const SizedBox(height: 24),
             // Presentation
-            const AnimatedPromoPresentation(height: 280),
+            const AnimatedPromoPresentation(height: 200),
             const SizedBox(height: 32),
             // Login Card
             _buildLoginCard(maxWidth: double.infinity),
@@ -400,7 +340,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           SlideInWidget(
             delay: const Duration(milliseconds: 500),
             duration: const Duration(milliseconds: 700),
-            child: const AnimatedPromoPresentation(height: 360),
+            child: const AnimatedPromoPresentation(height: 260),
           ),
           
           const SizedBox(height: 32),
