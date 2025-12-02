@@ -215,73 +215,111 @@ class _AnimatedPromoPresentationState extends State<AnimatedPromoPresentation>
             end: Alignment.bottomRight,
           ),
         ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Icon
-            _AnimatedIcon(icon: slide.icon, delay: 0),
-            const SizedBox(height: 12),
-            
-            // Title
-            _AnimatedText(
-              text: slide.title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1,
-              ),
-              delay: 100,
-            ),
-            
-            // Subtitle
-            if (slide.subtitle.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              _AnimatedText(
-                text: slide.subtitle,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icon
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
                 ),
-                delay: 200,
+                child: Icon(slide.icon, color: Colors.white, size: 24),
               ),
-            ],
-            
-            // Description
-            if (slide.description.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              _AnimatedText(
-                text: slide.description,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.85),
-                  fontSize: 13,
-                  height: 1.4,
+              const SizedBox(height: 8),
+              
+              // Title
+              Text(
+                slide.title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5,
                 ),
-                delay: 300,
                 textAlign: TextAlign.center,
               ),
-            ],
-            
-            // Features
-            if (slide.features.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              ...slide.features.asMap().entries.map((entry) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: _AnimatedFeatureRow(
-                  feature: entry.value,
-                  delay: 300 + (entry.key * 100),
+              
+              // Subtitle
+              if (slide.subtitle.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  slide.subtitle,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.85),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-              )),
+              ],
+              
+              // Description
+              if (slide.description.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  slide.description,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 11,
+                    height: 1.3,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              
+              // Features - show only first 3
+              if (slide.features.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                ...slide.features.take(3).map((feature) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(feature.icon, color: Colors.white, size: 14),
+                      const SizedBox(width: 6),
+                      Text(
+                        feature.text,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+              ],
+              
+              // Highlight
+              if (slide.highlight != null) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    slide.highlight!,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
             ],
-            
-            // Highlight
-            if (slide.highlight != null) ...[
-              const SizedBox(height: 16),
-              _AnimatedHighlight(text: slide.highlight!, delay: 600),
-            ],
-          ],
+          ),
         ),
       ),
     );
