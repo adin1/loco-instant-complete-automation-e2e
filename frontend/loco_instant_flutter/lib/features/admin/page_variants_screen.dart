@@ -392,8 +392,8 @@ class _VariantCard extends ConsumerWidget {
                 // Preview button
                 OutlinedButton.icon(
                   onPressed: () {
-                    // Open preview in new tab/dialog
-                    _showPreviewDialog(context);
+                    // Open preview dialog
+                    _showPreviewDialog(context, ref);
                   },
                   icon: const Icon(Icons.visibility, size: 16),
                   label: const Text('Preview'),
@@ -466,10 +466,10 @@ class _VariantCard extends ConsumerWidget {
     return Wrap(children: chips);
   }
 
-  void _showPreviewDialog(BuildContext context) {
+  void _showPreviewDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text('Preview: ${variant.name}'),
         content: SizedBox(
           width: 400,
@@ -499,11 +499,29 @@ class _VariantCard extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Pentru a vedea preview-ul complet, activează varianta.',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontStyle: FontStyle.italic,
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2DD4BF).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFF2DD4BF).withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, color: Color(0xFF2DD4BF), size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        variant.isActive 
+                          ? 'Această variantă este deja activă. Du-te la pagină pentru a o vedea.'
+                          : 'Click "Activează și vezi" pentru a aplica varianta și a vedea cum arată.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -511,8 +529,33 @@ class _VariantCard extends ConsumerWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Închide'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              // Activează varianta dacă nu e deja activă
+              if (!variant.isActive) {
+                await ref.read(pageVariantNotifierProvider(pageKey).notifier)
+                    .activateVariant(variant.id);
+              }
+              
+              Navigator.pop(dialogContext); // Închide dialogul
+              Navigator.pop(context); // Închide ecranul Admin
+              
+              // Navighează la pagină
+              if (pageKey == 'login') {
+                Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+              } else if (pageKey == 'homepage') {
+                Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+              }
+            },
+            icon: const Icon(Icons.visibility, size: 16),
+            label: Text(variant.isActive ? 'Vezi pagina' : 'Activează și vezi'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2DD4BF),
+              foregroundColor: Colors.white,
+            ),
           ),
         ],
       ),
