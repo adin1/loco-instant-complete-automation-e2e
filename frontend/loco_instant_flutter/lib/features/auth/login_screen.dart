@@ -8,6 +8,8 @@ import '../../services/auth_service.dart';
 import '../../widgets/animated_widgets.dart';
 import '../../widgets/animated_promo_presentation.dart';
 import '../../providers/provider_state.dart' show UserRole, userRoleProvider, ProviderType, providerTypeProvider;
+import '../../providers/page_variant_provider.dart';
+import '../../models/page_variant.dart';
 import '../admin/page_variants_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -120,38 +122,59 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Citește configurația activă pentru pagina de login
+    final configAsync = ref.watch(loginConfigProvider);
+    
+    return configAsync.when(
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (err, st) => _buildWithConfig(context, const LoginPageConfig()),
+      data: (config) => _buildWithConfig(context, config),
+    );
+  }
+
+  Widget _buildWithConfig(BuildContext context, LoginPageConfig config) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final isDesktop = screenWidth > 1100;
     final isTablet = screenWidth > 750 && screenWidth <= 1100;
 
+    // Determină culorile gradientului în funcție de temă
+    final gradientColors = _getGradientColors(config.theme);
+    
+    // Determină dacă se arată prezentarea
+    final showPresentation = config.showPresentation;
+    
+    // Înălțimea prezentării
+    final presentationHeight = config.presentationHeight.toDouble();
+
     return Scaffold(
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          // Gradient original albastru-verde
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color(0xFF1D4ED8),  // Albastru
-              Color(0xFF22C55E),  // Verde
-            ],
+            colors: gradientColors,
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
         ),
         child: Stack(
           children: [
-            // Background effects
-            _buildBackgroundEffects(),
+            // Background effects (controlled by config)
+            if (config.showBackgroundEffects) _buildBackgroundEffectsActive(),
             
-            // Main content
+            // Main content - layout controlled by config
             SafeArea(
-              child: isDesktop
-                  ? _buildDesktopLayout(screenHeight)
-                  : isTablet
-                      ? _buildTabletLayout()
-                      : _buildMobileLayout(),
+              child: _buildLayoutByConfig(
+                config: config,
+                isDesktop: isDesktop,
+                isTablet: isTablet,
+                screenHeight: screenHeight,
+                showPresentation: showPresentation,
+                presentationHeight: presentationHeight,
+              ),
             ),
             
             // Admin button - Page Variants
@@ -162,12 +185,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: MouseRegion(
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(
+                    onTap: () async {
+                      await Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => const PageVariantsScreen(),
                         ),
                       );
+                      // Refresh când ne întoarcem din admin
+                      if (mounted) {
+                        ref.invalidate(loginConfigProvider);
+                      }
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -179,7 +206,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.tune, color: Colors.white, size: 18),
+                          const Icon(Icons.tune, color: Colors.white, size: 18),
                           const SizedBox(width: 8),
                           const Text(
                             'Variante',
@@ -196,9 +223,229 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
             ),
+            
+            // Indicator variantă activă (jos-stânga)
+            Positioned(
+              bottom: 16,
+              left: 16,
+              child: SafeArea(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '${config.layout} • ${config.theme}',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.6),
+                      fontSize: 10,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  // Returnează culorile gradientului în funcție de temă
+  List<Color> _getGradientColors(String theme) {
+    switch (theme) {
+      case 'dark':
+        return [const Color(0xFF1A1A2E), const Color(0xFF16213E)];
+      case 'light':
+        return [const Color(0xFFE0E7FF), const Color(0xFFDDD6FE)];
+      case 'purple':
+        return [const Color(0xFF7C3AED), const Color(0xFFEC4899)];
+      case 'ocean':
+        return [const Color(0xFF0077B6), const Color(0xFF00B4D8)];
+      case 'gradient':
+      default:
+        return [const Color(0xFF1D4ED8), const Color(0xFF22C55E)];
+    }
+  }
+
+  // Construiește layout-ul în funcție de config
+  Widget _buildLayoutByConfig({
+    required LoginPageConfig config,
+    required bool isDesktop,
+    required bool isTablet,
+    required double screenHeight,
+    required bool showPresentation,
+    required double presentationHeight,
+  }) {
+    switch (config.layout) {
+      case 'centered':
+        return _buildCenteredLayout(
+          showPresentation: showPresentation,
+          presentationHeight: presentationHeight,
+          cardStyle: config.cardStyle,
+        );
+      case 'classic':
+        return _buildClassicLayout(
+          showPresentation: showPresentation,
+          cardStyle: config.cardStyle,
+        );
+      case 'split':
+      default:
+        if (isDesktop) {
+          return _buildDesktopLayout(screenHeight, showPresentation, presentationHeight);
+        } else if (isTablet) {
+          return _buildTabletLayout();
+        } else {
+          return _buildMobileLayout();
+        }
+    }
+  }
+
+  // Layout CENTERED - Tot centrat pe ecran
+  Widget _buildCenteredLayout({
+    required bool showPresentation,
+    required double presentationHeight,
+    required String cardStyle,
+  }) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Logo
+            _buildLogo(size: 64),
+            const SizedBox(height: 16),
+            
+            // Brand name
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Text('LOCO ', style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: Colors.white)),
+                Text('INSTANT', style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: Color(0xFF2DD4BF))),
+              ],
+            ),
+            Text('la un pas de tine', style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14)),
+            
+            const SizedBox(height: 32),
+            
+            // Prezentare (dacă e activată)
+            if (showPresentation) ...[
+              SizedBox(
+                width: 500,
+                child: AnimatedPromoPresentation(height: presentationHeight),
+              ),
+              const SizedBox(height: 24),
+            ],
+            
+            // Card login
+            Container(
+              width: 400,
+              child: _buildLoginCard(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Layout CLASSIC - Card simplu, fără prezentare mare
+  Widget _buildClassicLayout({
+    required bool showPresentation,
+    required String cardStyle,
+  }) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Logo mare
+            _buildLogo(size: 80),
+            const SizedBox(height: 24),
+            
+            // Brand
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Text('LOCO ', style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.white)),
+                Text('INSTANT', style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Color(0xFF2DD4BF))),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Platforma care conectează clienții cu prestatorii verificați',
+              style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            
+            const SizedBox(height: 48),
+            
+            // Card login
+            Container(
+              width: 420,
+              child: _buildLoginCard(),
+            ),
+            
+            const SizedBox(height: 32),
+            
+            // Trust badges
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildTrustBadge(Icons.verified_user, 'Verificat'),
+                const SizedBox(width: 24),
+                _buildTrustBadge(Icons.lock, 'ESCROW'),
+                const SizedBox(width: 24),
+                _buildTrustBadge(Icons.speed, 'Rapid'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Background effects când sunt activate
+  Widget _buildBackgroundEffectsActive() {
+    return Stack(
+      children: [
+        Positioned(
+          top: -100,
+          right: -100,
+          child: Container(
+            width: 300,
+            height: 300,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  Colors.white.withOpacity(0.1),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: -150,
+          left: -150,
+          child: Container(
+            width: 400,
+            height: 400,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  Colors.white.withOpacity(0.05),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -212,7 +459,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   // ══════════════════════════════════════════════════════════════
   // DESKTOP LAYOUT - Hero Presentation + Login
   // ══════════════════════════════════════════════════════════════
-  Widget _buildDesktopLayout(double screenHeight) {
+  Widget _buildDesktopLayout(double screenHeight, bool showPresentation, double presentationHeight) {
     return Row(
       children: [
         // LEFT SIDE - Hero Presentation (60%)
@@ -221,7 +468,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: Center(
             child: Padding(
               padding: const EdgeInsets.all(48),
-              child: _buildHeroSection(maxWidth: 700, maxHeight: screenHeight * 0.85),
+              child: _buildHeroSection(
+                maxWidth: 700, 
+                maxHeight: screenHeight * 0.85,
+                showPresentation: showPresentation,
+                presentationHeight: presentationHeight,
+              ),
             ),
           ),
         ),
@@ -295,7 +547,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   // ══════════════════════════════════════════════════════════════
   // HERO SECTION - Desktop Left Side
   // ══════════════════════════════════════════════════════════════
-  Widget _buildHeroSection({required double maxWidth, required double maxHeight}) {
+  Widget _buildHeroSection({
+    required double maxWidth, 
+    required double maxHeight,
+    bool showPresentation = true,
+    double presentationHeight = 220,
+  }) {
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: maxWidth, maxHeight: maxHeight),
       child: SingleChildScrollView(
@@ -350,14 +607,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
             const SizedBox(height: 24),
             
-            // Animated Presentation - CENTERED & PROMINENT
-            SlideInWidget(
-              delay: const Duration(milliseconds: 300),
-              duration: const Duration(milliseconds: 700),
-              child: const AnimatedPromoPresentation(height: 220),
-            ),
-            
-            const SizedBox(height: 20),
+            // Animated Presentation - controlat de config
+            if (showPresentation) ...[
+              SlideInWidget(
+                delay: const Duration(milliseconds: 300),
+                duration: const Duration(milliseconds: 700),
+                child: AnimatedPromoPresentation(height: presentationHeight),
+              ),
+              const SizedBox(height: 20),
+            ],
             
             // Trust badges
             FadeInWidget(
@@ -474,7 +732,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   // ══════════════════════════════════════════════════════════════
   // LOGIN CARD - Glassmorphism style
   // ══════════════════════════════════════════════════════════════
-  Widget _buildLoginCard({required double maxWidth}) {
+  Widget _buildLoginCard({double maxWidth = 400}) {
     return SlideInWidget(
       delay: const Duration(milliseconds: 300),
       duration: const Duration(milliseconds: 600),

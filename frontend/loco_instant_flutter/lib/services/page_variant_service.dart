@@ -40,14 +40,77 @@ class PageVariantService {
 
   /// Asigură că există variante default pentru paginile principale
   Future<void> _ensureDefaultVariants() async {
-    // Default Login variant
+    // Default Login variants
     if (!_variants.any((v) => v.pageKey == 'login')) {
+      // Varianta 1 - Gradient Classic (activ)
       await createVariant(
         pageKey: 'login',
-        name: 'Login v1 - Gradient Classic',
-        description: 'Varianta inițială cu gradient albastru-verde',
-        config: const LoginPageConfig().toJson(),
+        name: 'Login v1 - Gradient Split',
+        description: 'Layout split cu gradient albastru-verde și prezentare',
+        config: const LoginPageConfig(
+          layout: 'split',
+          theme: 'gradient',
+          showPresentation: true,
+          presentationHeight: 220,
+        ).toJson(),
         setActive: true,
+      );
+      
+      // Varianta 2 - Dark Centered
+      await createVariant(
+        pageKey: 'login',
+        name: 'Login v2 - Dark Centered',
+        description: 'Layout centrat cu temă întunecată',
+        config: const LoginPageConfig(
+          layout: 'centered',
+          theme: 'dark',
+          showPresentation: true,
+          presentationHeight: 200,
+        ).toJson(),
+        setActive: false,
+      );
+      
+      // Varianta 3 - Classic Minimal
+      await createVariant(
+        pageKey: 'login',
+        name: 'Login v3 - Classic Minimal',
+        description: 'Layout clasic fără prezentare animată',
+        config: const LoginPageConfig(
+          layout: 'classic',
+          theme: 'gradient',
+          showPresentation: false,
+          presentationHeight: 0,
+        ).toJson(),
+        setActive: false,
+      );
+      
+      // Varianta 4 - Purple Magic
+      await createVariant(
+        pageKey: 'login',
+        name: 'Login v4 - Purple Magic',
+        description: 'Temă violet cu efecte de fundal',
+        config: const LoginPageConfig(
+          layout: 'split',
+          theme: 'purple',
+          showPresentation: true,
+          presentationHeight: 240,
+          showBackgroundEffects: true,
+        ).toJson(),
+        setActive: false,
+      );
+      
+      // Varianta 5 - Ocean Light
+      await createVariant(
+        pageKey: 'login',
+        name: 'Login v5 - Ocean Centered',
+        description: 'Temă ocean cu layout centrat',
+        config: const LoginPageConfig(
+          layout: 'centered',
+          theme: 'ocean',
+          showPresentation: true,
+          presentationHeight: 180,
+        ).toJson(),
+        setActive: false,
       );
     }
     
