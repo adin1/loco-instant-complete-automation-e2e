@@ -58,7 +58,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _passwordError = null;
     });
 
-    // Validare
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     
@@ -121,59 +120,136 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth > 1000;
-    final isTablet = screenWidth > 650 && screenWidth <= 1000;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isDesktop = screenWidth > 1100;
+    final isTablet = screenWidth > 750 && screenWidth <= 1100;
 
     return Scaffold(
       body: Container(
+        width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(
+          // Gradient mai subtil, inspirat de Linear/Vercel
           gradient: LinearGradient(
-            colors: [Color(0xFF0F4C81), Color(0xFF1A936F)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF0A0A0F),  // Negru aproape
+              Color(0xFF0D1117),  // Dark blue-gray
+              Color(0xFF161B22),  // GitHub dark
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
         ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(
-                horizontal: isDesktop ? 48 : (isTablet ? 32 : 20),
-                vertical: 24,
-              ),
+        child: Stack(
+          children: [
+            // Background effects
+            _buildBackgroundEffects(),
+            
+            // Main content
+            SafeArea(
               child: isDesktop
-                  ? _buildDesktopLayout()
+                  ? _buildDesktopLayout(screenHeight)
                   : isTablet
                       ? _buildTabletLayout()
                       : _buildMobileLayout(),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 
   // ══════════════════════════════════════════════════════════════
-  // DESKTOP LAYOUT - Split: Branding | Login Card
+  // BACKGROUND EFFECTS - Glow effects inspirate de Linear
   // ══════════════════════════════════════════════════════════════
-  Widget _buildDesktopLayout() {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 1100),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // LEFT SIDE - Branding
-          Expanded(
-            flex: 45,
-            child: _buildBrandingSection(),
+  Widget _buildBackgroundEffects() {
+    return Stack(
+      children: [
+        // Top-left glow
+        Positioned(
+          top: -100,
+          left: -100,
+          child: Container(
+            width: 400,
+            height: 400,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xFF2DD4BF).withOpacity(0.15),
+                  Colors.transparent,
+                ],
+              ),
+            ),
           ),
-          const SizedBox(width: 80),
-          // RIGHT SIDE - Login Card
-          Expanded(
-            flex: 55,
-            child: _buildLoginCard(),
+        ),
+        // Bottom-right glow
+        Positioned(
+          bottom: -150,
+          right: -150,
+          child: Container(
+            width: 500,
+            height: 500,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xFF3B82F6).withOpacity(0.1),
+                  Colors.transparent,
+                ],
+              ),
+            ),
           ),
-        ],
-      ),
+        ),
+        // Center accent
+        Positioned(
+          top: 200,
+          right: 100,
+          child: Container(
+            width: 300,
+            height: 300,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xFF8B5CF6).withOpacity(0.08),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // DESKTOP LAYOUT - Hero Presentation + Login
+  // ══════════════════════════════════════════════════════════════
+  Widget _buildDesktopLayout(double screenHeight) {
+    return Row(
+      children: [
+        // LEFT SIDE - Hero Presentation (60%)
+        Expanded(
+          flex: 60,
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(48),
+              child: _buildHeroSection(maxWidth: 700, maxHeight: screenHeight * 0.85),
+            ),
+          ),
+        ),
+        // RIGHT SIDE - Login Form (40%)
+        Expanded(
+          flex: 40,
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 24),
+              child: _buildLoginCard(maxWidth: 400),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -181,15 +257,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   // TABLET LAYOUT
   // ══════════════════════════════════════════════════════════════
   Widget _buildTabletLayout() {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 500),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildCompactBranding(),
-          const SizedBox(height: 32),
-          _buildLoginCard(),
-        ],
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          children: [
+            // Logo & Title
+            _buildCompactHeader(),
+            const SizedBox(height: 32),
+            // Presentation
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 600),
+                child: const AnimatedPromoPresentation(height: 340),
+              ),
+            ),
+            const SizedBox(height: 40),
+            // Login Card
+            _buildLoginCard(maxWidth: 420),
+          ],
+        ),
       ),
     );
   }
@@ -198,103 +285,151 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   // MOBILE LAYOUT
   // ══════════════════════════════════════════════════════════════
   Widget _buildMobileLayout() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildCompactBranding(),
-        const SizedBox(height: 24),
-        _buildLoginCard(),
-      ],
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            const SizedBox(height: 16),
+            // Logo & Title
+            _buildCompactHeader(),
+            const SizedBox(height: 24),
+            // Presentation
+            const AnimatedPromoPresentation(height: 280),
+            const SizedBox(height: 32),
+            // Login Card
+            _buildLoginCard(maxWidth: double.infinity),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
     );
   }
 
   // ══════════════════════════════════════════════════════════════
-  // BRANDING SECTION (Desktop - Left Side)
+  // HERO SECTION - Desktop Left Side
   // ══════════════════════════════════════════════════════════════
-  Widget _buildBrandingSection() {
-    return FadeInWidget(
-      duration: const Duration(milliseconds: 800),
+  Widget _buildHeroSection({required double maxWidth, required double maxHeight}) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth, maxHeight: maxHeight),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
-          // Logo
-          _buildLogo(size: 72),
-          const SizedBox(height: 24),
-          // Title
-          const Text(
-            'LOCO INSTANT',
-            style: TextStyle(
-              fontSize: 42,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-              letterSpacing: 2,
-              height: 1.1,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Text(
-              'la un pas de tine',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-                letterSpacing: 1.5,
-              ),
+          // Logo + Brand
+          FadeInWidget(
+            duration: const Duration(milliseconds: 600),
+            child: Row(
+              children: [
+                _buildLogo(size: 52),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: const [
+                        Text(
+                          'LOCO ',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        Text(
+                          'INSTANT',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF2DD4BF),
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      'la un pas de tine',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white.withOpacity(0.6),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 40),
-          // Description
-          Text(
-            'Platforma inteligentă care conectează rapid clienții cu prestatorii de servicii verificați din apropiere.',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.white.withOpacity(0.9),
-              height: 1.6,
+          
+          // Main Headline
+          FadeInWidget(
+            delay: const Duration(milliseconds: 200),
+            child: Text(
+              'Servicii de încredere,\nla un click distanță',
+              style: TextStyle(
+                fontSize: 48,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                height: 1.15,
+                letterSpacing: -1,
+              ),
             ),
           ),
+          const SizedBox(height: 20),
+          
+          // Subheadline
+          FadeInWidget(
+            delay: const Duration(milliseconds: 400),
+            child: Text(
+              'Platforma care conectează clienții cu prestatorii verificați.\nPlăți securizate prin ESCROW. Zero riscuri.',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.white.withOpacity(0.7),
+                height: 1.6,
+              ),
+            ),
+          ),
+          const SizedBox(height: 48),
+          
+          // Animated Presentation - CENTERED & PROMINENT
+          SlideInWidget(
+            delay: const Duration(milliseconds: 500),
+            duration: const Duration(milliseconds: 700),
+            child: const AnimatedPromoPresentation(height: 360),
+          ),
+          
           const SizedBox(height: 32),
-          // Features
-          _buildFeatureItem(Icons.bolt, 'Comenzi în câteva secunde'),
-          const SizedBox(height: 12),
-          _buildFeatureItem(Icons.verified_user, 'Prestatori verificați'),
-          const SizedBox(height: 12),
-          _buildFeatureItem(Icons.lock_outline, 'Plăți securizate ESCROW'),
-          const SizedBox(height: 12),
-          _buildFeatureItem(Icons.location_on_outlined, 'Prestatori din zona ta'),
-          const SizedBox(height: 32),
-          // Prezentare Animată
-          const AnimatedPromoPresentation(
-            height: 280,
+          
+          // Trust badges
+          FadeInWidget(
+            delay: const Duration(milliseconds: 800),
+            child: Row(
+              children: [
+                _buildTrustBadge(Icons.verified_user, 'Verificat'),
+                const SizedBox(width: 24),
+                _buildTrustBadge(Icons.lock, 'ESCROW'),
+                const SizedBox(width: 24),
+                _buildTrustBadge(Icons.speed, 'Rapid'),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFeatureItem(IconData icon, String text) {
+  Widget _buildTrustBadge(IconData icon, String label) {
     return Row(
       children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: Colors.white, size: 20),
-        ),
-        const SizedBox(width: 14),
+        Icon(icon, color: const Color(0xFF2DD4BF), size: 18),
+        const SizedBox(width: 6),
         Text(
-          text,
+          label,
           style: TextStyle(
-            fontSize: 15,
-            color: Colors.white.withOpacity(0.95),
+            color: Colors.white.withOpacity(0.7),
+            fontSize: 13,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -303,45 +438,44 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   // ══════════════════════════════════════════════════════════════
-  // COMPACT BRANDING (Tablet/Mobile - Top)
+  // COMPACT HEADER - Tablet/Mobile
   // ══════════════════════════════════════════════════════════════
-  Widget _buildCompactBranding() {
+  Widget _buildCompactHeader() {
     return FadeInWidget(
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 500),
       child: Column(
         children: [
-          _buildLogo(size: 56),
-          const SizedBox(height: 16),
+          _buildLogo(size: 48),
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: const [
               Text(
                 'LOCO ',
                 style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
                   color: Colors.white,
-                  letterSpacing: 1.5,
+                  letterSpacing: 1,
                 ),
               ),
               Text(
                 'INSTANT',
                 style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
                   color: Color(0xFF2DD4BF),
-                  letterSpacing: 1.5,
+                  letterSpacing: 1,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
             'la un pas de tine',
             style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withOpacity(0.8),
-              letterSpacing: 1,
+              fontSize: 13,
+              color: Colors.white.withOpacity(0.6),
             ),
           ),
         ],
@@ -350,14 +484,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   // ══════════════════════════════════════════════════════════════
-  // LOGO WIDGET
+  // LOGO
   // ══════════════════════════════════════════════════════════════
   Widget _buildLogo({required double size}) {
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: const Color(0xFF2DD4BF),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF2DD4BF), Color(0xFF06B6D4)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(size * 0.25),
         boxShadow: [
           BoxShadow(
@@ -376,163 +514,149 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   // ══════════════════════════════════════════════════════════════
-  // LOGIN CARD - Modern Design (Stripe/Notion inspired)
+  // LOGIN CARD - Glassmorphism style
   // ══════════════════════════════════════════════════════════════
-  Widget _buildLoginCard() {
+  Widget _buildLoginCard({required double maxWidth}) {
     return SlideInWidget(
       delay: const Duration(milliseconds: 300),
       duration: const Duration(milliseconds: 600),
+      offset: const Offset(30, 0),
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 440),
+        constraints: BoxConstraints(maxWidth: maxWidth),
         decoration: BoxDecoration(
-          color: Colors.white,
+          // Glassmorphism effect
+          color: Colors.white.withOpacity(0.05),
           borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.1),
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withOpacity(0.2),
               blurRadius: 40,
               offset: const Offset(0, 20),
             ),
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
           ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Header
-                const Text(
-                  'Intră în cont',
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1A1A2E),
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Alege tipul de cont și autentifică-te',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-                const SizedBox(height: 28),
-                
-                // Account Type Tabs
-                _buildAccountTypeTabs(),
-                const SizedBox(height: 24),
-                
-                // Provider Type Selection (if provider)
-                _buildProviderTypeSection(),
-                
-                // Email Field
-                _buildTextField(
-                  controller: _emailController,
-                  focusNode: _emailFocusNode,
-                  label: 'Email',
-                  hint: 'nume@exemplu.com',
-                  icon: Icons.email_outlined,
-                  keyboardType: TextInputType.emailAddress,
-                  error: _emailError,
-                  onSubmitted: (_) => _passwordFocusNode.requestFocus(),
-                ),
-                const SizedBox(height: 18),
-                
-                // Password Field
-                _buildTextField(
-                  controller: _passwordController,
-                  focusNode: _passwordFocusNode,
-                  label: 'Parolă',
-                  hint: '••••••••',
-                  icon: Icons.lock_outline,
-                  isPassword: true,
-                  error: _passwordError,
-                  onSubmitted: (_) => _submit(),
-                ),
-                const SizedBox(height: 12),
-                
-                // Forgot Password
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Funcție în dezvoltare')),
-                      );
-                    },
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    ),
-                    child: Text(
-                      'Ai uitat parola?',
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ColorFilter.mode(
+              Colors.white.withOpacity(0.05),
+              BlendMode.overlay,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header
+                    const Text(
+                      'Bine ai venit!',
                       style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade600,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: -0.5,
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                
-                // Submit Button
-                _buildSubmitButton(),
-                const SizedBox(height: 24),
-                
-                // Divider
-                Row(
-                  children: [
-                    Expanded(child: Divider(color: Colors.grey.shade300)),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'sau',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade500,
-                        ),
-                      ),
-                    ),
-                    Expanded(child: Divider(color: Colors.grey.shade300)),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                
-                // Register Link
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
+                    const SizedBox(height: 4),
                     Text(
-                      'Nu ai cont? ',
+                      'Autentifică-te pentru a continua',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey.shade600,
+                        color: Colors.white.withOpacity(0.6),
                       ),
                     ),
-                    GestureDetector(
-                      onTap: () => context.go('/register'),
-                      child: const Text(
-                        'Creează unul gratuit',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF2DD4BF),
-                          fontWeight: FontWeight.w600,
+                    const SizedBox(height: 28),
+                    
+                    // Account Type Tabs
+                    _buildAccountTypeTabs(),
+                    const SizedBox(height: 24),
+                    
+                    // Provider Type Selection
+                    _buildProviderTypeSection(),
+                    
+                    // Email Field
+                    _buildTextField(
+                      controller: _emailController,
+                      focusNode: _emailFocusNode,
+                      label: 'Email',
+                      hint: 'nume@exemplu.com',
+                      icon: Icons.email_outlined,
+                      keyboardType: TextInputType.emailAddress,
+                      error: _emailError,
+                      onSubmitted: (_) => _passwordFocusNode.requestFocus(),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Password Field
+                    _buildTextField(
+                      controller: _passwordController,
+                      focusNode: _passwordFocusNode,
+                      label: 'Parolă',
+                      hint: '••••••••',
+                      icon: Icons.lock_outline,
+                      isPassword: true,
+                      error: _passwordError,
+                      onSubmitted: (_) => _submit(),
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    // Forgot Password
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {},
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                        ),
+                        child: Text(
+                          'Ai uitat parola?',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.white.withOpacity(0.6),
+                          ),
                         ),
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    
+                    // Submit Button
+                    _buildSubmitButton(),
+                    const SizedBox(height: 24),
+                    
+                    // Register Link
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Nu ai cont? ',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white.withOpacity(0.6),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => context.go('/register'),
+                          child: const Text(
+                            'Înregistrează-te',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF2DD4BF),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -541,14 +665,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   // ══════════════════════════════════════════════════════════════
-  // ACCOUNT TYPE TABS (Client / Prestator)
+  // ACCOUNT TYPE TABS
   // ══════════════════════════════════════════════════════════════
   Widget _buildAccountTypeTabs() {
     return Container(
-      height: 52,
+      height: 48,
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F7FA),
-        borderRadius: BorderRadius.circular(14),
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
       ),
       padding: const EdgeInsets.all(4),
       child: Row(
@@ -563,33 +688,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
-                  color: !_isProvider ? const Color(0xFF2DD4BF) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: !_isProvider
-                      ? [
-                          BoxShadow(
-                            color: const Color(0xFF2DD4BF).withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
+                  color: !_isProvider 
+                      ? const Color(0xFF2DD4BF)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
                       Icons.person_outline,
-                      size: 20,
-                      color: !_isProvider ? Colors.white : Colors.grey.shade500,
+                      size: 18,
+                      color: !_isProvider ? Colors.white : Colors.white.withOpacity(0.5),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     Text(
                       'Client',
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: !_isProvider ? Colors.white : Colors.grey.shade600,
+                        color: !_isProvider ? Colors.white : Colors.white.withOpacity(0.5),
                       ),
                     ),
                   ],
@@ -604,33 +722,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
-                  color: _isProvider ? const Color(0xFF2DD4BF) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: _isProvider
-                      ? [
-                          BoxShadow(
-                            color: const Color(0xFF2DD4BF).withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
+                  color: _isProvider 
+                      ? const Color(0xFF2DD4BF)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
                       Icons.handyman_outlined,
-                      size: 20,
-                      color: _isProvider ? Colors.white : Colors.grey.shade500,
+                      size: 18,
+                      color: _isProvider ? Colors.white : Colors.white.withOpacity(0.5),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     Text(
                       'Prestator',
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: _isProvider ? Colors.white : Colors.grey.shade600,
+                        color: _isProvider ? Colors.white : Colors.white.withOpacity(0.5),
                       ),
                     ),
                   ],
@@ -658,11 +769,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             'Tip activitate',
             style: TextStyle(
               fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
+              fontWeight: FontWeight.w500,
+              color: Colors.white.withOpacity(0.7),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
@@ -682,7 +793,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
         ],
       ),
     );
@@ -698,13 +809,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       onTap: () => setState(() => _providerType = type),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF2DD4BF).withOpacity(0.1) : const Color(0xFFF5F7FA),
-          borderRadius: BorderRadius.circular(12),
+          color: isSelected 
+              ? const Color(0xFF2DD4BF).withOpacity(0.15)
+              : Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isSelected ? const Color(0xFF2DD4BF) : Colors.transparent,
-            width: 2,
+            color: isSelected 
+                ? const Color(0xFF2DD4BF)
+                : Colors.white.withOpacity(0.1),
+            width: isSelected ? 2 : 1,
           ),
         ),
         child: Row(
@@ -712,16 +827,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           children: [
             Icon(
               icon,
-              size: 20,
-              color: isSelected ? const Color(0xFF2DD4BF) : Colors.grey.shade500,
+              size: 18,
+              color: isSelected 
+                  ? const Color(0xFF2DD4BF)
+                  : Colors.white.withOpacity(0.5),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: isSelected ? const Color(0xFF2DD4BF) : Colors.grey.shade600,
+                color: isSelected 
+                    ? const Color(0xFF2DD4BF)
+                    : Colors.white.withOpacity(0.5),
               ),
             ),
           ],
@@ -731,7 +850,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   // ══════════════════════════════════════════════════════════════
-  // TEXT FIELD - Modern Design
+  // TEXT FIELD - Dark theme
   // ══════════════════════════════════════════════════════════════
   Widget _buildTextField({
     required TextEditingController controller,
@@ -751,77 +870,68 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           label,
           style: TextStyle(
             fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey.shade700,
+            fontWeight: FontWeight.w500,
+            color: Colors.white.withOpacity(0.7),
           ),
         ),
         const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              if (focusNode.hasFocus)
-                BoxShadow(
-                  color: error != null
-                      ? Colors.red.withOpacity(0.15)
-                      : const Color(0xFF2DD4BF).withOpacity(0.15),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-            ],
+        TextFormField(
+          controller: controller,
+          focusNode: focusNode,
+          keyboardType: keyboardType,
+          obscureText: isPassword && _obscurePassword,
+          textInputAction: isPassword ? TextInputAction.done : TextInputAction.next,
+          onFieldSubmitted: onSubmitted,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
           ),
-          child: TextFormField(
-            controller: controller,
-            focusNode: focusNode,
-            keyboardType: keyboardType,
-            obscureText: isPassword && _obscurePassword,
-            textInputAction: isPassword ? TextInputAction.done : TextInputAction.next,
-            onFieldSubmitted: onSubmitted,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF1A1A2E),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(
+              color: Colors.white.withOpacity(0.3),
+              fontWeight: FontWeight.w400,
             ),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: TextStyle(
-                color: Colors.grey.shade400,
-                fontWeight: FontWeight.w400,
+            prefixIcon: Icon(
+              icon,
+              color: error != null 
+                  ? Colors.red.shade400 
+                  : Colors.white.withOpacity(0.4),
+              size: 20,
+            ),
+            suffixIcon: isPassword
+                ? GestureDetector(
+                    onTap: () => setState(() => _obscurePassword = !_obscurePassword),
+                    child: Icon(
+                      _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                      color: Colors.white.withOpacity(0.4),
+                      size: 20,
+                    ),
+                  )
+                : null,
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.05),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: error != null 
+                    ? Colors.red.shade400 
+                    : Colors.white.withOpacity(0.1),
               ),
-              prefixIcon: Icon(
-                icon,
-                color: error != null ? Colors.red.shade400 : Colors.grey.shade500,
-                size: 20,
-              ),
-              suffixIcon: isPassword
-                  ? GestureDetector(
-                      onTap: () => setState(() => _obscurePassword = !_obscurePassword),
-                      child: Icon(
-                        _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                        color: Colors.grey.shade500,
-                        size: 20,
-                      ),
-                    )
-                  : null,
-              filled: true,
-              fillColor: const Color(0xFFF5F7FA),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: error != null
-                    ? BorderSide(color: Colors.red.shade400, width: 1.5)
-                    : BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: error != null ? Colors.red.shade400 : const Color(0xFF2DD4BF),
-                  width: 2,
-                ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: error != null 
+                    ? Colors.red.shade400 
+                    : const Color(0xFF2DD4BF),
+                width: 2,
               ),
             ),
           ),
@@ -830,14 +940,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           const SizedBox(height: 6),
           Row(
             children: [
-              Icon(Icons.error_outline, size: 14, color: Colors.red.shade500),
+              Icon(Icons.error_outline, size: 14, color: Colors.red.shade400),
               const SizedBox(width: 6),
               Text(
                 error,
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.red.shade500,
-                  fontWeight: FontWeight.w500,
+                  color: Colors.red.shade400,
                 ),
               ),
             ],
@@ -852,17 +961,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   // ══════════════════════════════════════════════════════════════
   Widget _buildSubmitButton() {
     return SizedBox(
-      height: 54,
+      height: 52,
       child: ElevatedButton(
         onPressed: _isSubmitting ? null : _submit,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF2DD4BF),
           foregroundColor: Colors.white,
-          disabledBackgroundColor: const Color(0xFF2DD4BF).withOpacity(0.6),
+          disabledBackgroundColor: const Color(0xFF2DD4BF).withOpacity(0.5),
           elevation: 0,
-          shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
         child: _isSubmitting
@@ -879,7 +987,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
                 ),
               ),
       ),
