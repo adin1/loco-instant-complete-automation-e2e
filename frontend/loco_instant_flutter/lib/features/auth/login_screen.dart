@@ -298,110 +298,82 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget _buildHeroSection({required double maxWidth, required double maxHeight}) {
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: maxWidth, maxHeight: maxHeight),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Logo + Brand
-          FadeInWidget(
-            duration: const Duration(milliseconds: 600),
-            child: Row(
-              children: [
-                _buildLogo(size: 52),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: const [
-                        Text(
-                          'LOCO ',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                            letterSpacing: 1,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Logo + Brand
+            FadeInWidget(
+              duration: const Duration(milliseconds: 600),
+              child: Row(
+                children: [
+                  _buildLogo(size: 48),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: const [
+                          Text(
+                            'LOCO ',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: 1,
+                            ),
                           ),
-                        ),
-                        Text(
-                          'INSTANT',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF2DD4BF),
-                            letterSpacing: 1,
+                          Text(
+                            'INSTANT',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF2DD4BF),
+                              letterSpacing: 1,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      'la un pas de tine',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white.withOpacity(0.6),
-                        letterSpacing: 0.5,
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 40),
-          
-          // Main Headline
-          FadeInWidget(
-            delay: const Duration(milliseconds: 200),
-            child: Text(
-              'Servicii de încredere,\nla un click distanță',
-              style: TextStyle(
-                fontSize: 48,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                height: 1.15,
-                letterSpacing: -1,
+                      Text(
+                        'la un pas de tine',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white.withOpacity(0.6),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-          ),
-          const SizedBox(height: 20),
-          
-          // Subheadline
-          FadeInWidget(
-            delay: const Duration(milliseconds: 400),
-            child: Text(
-              'Platforma care conectează clienții cu prestatorii verificați.\nPlăți securizate prin ESCROW. Zero riscuri.',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.white.withOpacity(0.7),
-                height: 1.6,
+            const SizedBox(height: 24),
+            
+            // Animated Presentation - CENTERED & PROMINENT
+            SlideInWidget(
+              delay: const Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 700),
+              child: const AnimatedPromoPresentation(height: 220),
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // Trust badges
+            FadeInWidget(
+              delay: const Duration(milliseconds: 600),
+              child: Row(
+                children: [
+                  _buildTrustBadge(Icons.verified_user, 'Verificat'),
+                  const SizedBox(width: 20),
+                  _buildTrustBadge(Icons.lock, 'ESCROW'),
+                  const SizedBox(width: 20),
+                  _buildTrustBadge(Icons.speed, 'Rapid'),
+                ],
               ),
             ),
-          ),
-          const SizedBox(height: 48),
-          
-          // Animated Presentation - CENTERED & PROMINENT
-          SlideInWidget(
-            delay: const Duration(milliseconds: 500),
-            duration: const Duration(milliseconds: 700),
-            child: const AnimatedPromoPresentation(height: 260),
-          ),
-          
-          const SizedBox(height: 32),
-          
-          // Trust badges
-          FadeInWidget(
-            delay: const Duration(milliseconds: 800),
-            child: Row(
-              children: [
-                _buildTrustBadge(Icons.verified_user, 'Verificat'),
-                const SizedBox(width: 24),
-                _buildTrustBadge(Icons.lock, 'ESCROW'),
-                const SizedBox(width: 24),
-                _buildTrustBadge(Icons.speed, 'Rapid'),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
