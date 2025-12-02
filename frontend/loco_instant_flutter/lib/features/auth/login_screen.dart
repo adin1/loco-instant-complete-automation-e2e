@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../services/auth_service.dart';
 import '../../widgets/animated_widgets.dart';
-import '../../widgets/promo_video_player.dart';
+import '../../widgets/animated_promo_presentation.dart';
 import '../../providers/provider_state.dart' show UserRole, userRoleProvider, ProviderType, providerTypeProvider;
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -269,15 +269,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           const SizedBox(height: 12),
           _buildFeatureItem(Icons.location_on_outlined, 'Prestatori din zona ta'),
           const SizedBox(height: 32),
-          // Video Player
-          const PromoVideoPlayer(
-            videoUrl: 'assets/videos/loco-instant-promo.mp4',
-            posterUrl: 'assets/images/loco-instant-poster.jpg',
-            height: 220,
-            autoplay: false,
-            loop: true,
-            muted: true,
-            showControls: true,
+          // Prezentare Animată
+          const AnimatedPromoPresentation(
+            height: 280,
           ),
         ],
       ),
