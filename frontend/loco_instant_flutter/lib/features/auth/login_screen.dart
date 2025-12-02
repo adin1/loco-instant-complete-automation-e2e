@@ -8,6 +8,7 @@ import '../../services/auth_service.dart';
 import '../../widgets/animated_widgets.dart';
 import '../../widgets/animated_promo_presentation.dart';
 import '../../providers/provider_state.dart' show UserRole, userRoleProvider, ProviderType, providerTypeProvider;
+import '../admin/page_variants_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -158,28 +159,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               top: 16,
               right: 16,
               child: SafeArea(
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => context.go('/admin/variants'),
-                    borderRadius: BorderRadius.circular(10),
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const PageVariantsScreen(),
+                        ),
+                      );
+                    },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withOpacity(0.3),
                         borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.white.withOpacity(0.2)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.tune, color: Colors.white.withOpacity(0.8), size: 16),
-                          const SizedBox(width: 6),
-                          Text(
+                          Icon(Icons.tune, color: Colors.white, size: 18),
+                          const SizedBox(width: 8),
+                          const Text(
                             'Variante',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],

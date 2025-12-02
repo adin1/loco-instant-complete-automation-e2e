@@ -134,19 +134,10 @@ class _AnimatedPromoPresentationState extends State<AnimatedPromoPresentation>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: widget.height ?? 320,
-      decoration: BoxDecoration(
-        borderRadius: widget.borderRadius ?? BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.25),
-            blurRadius: 25,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
+    return ClipRRect(
+      borderRadius: widget.borderRadius ?? BorderRadius.circular(20),
+      child: Container(
+        height: widget.height ?? 320,
       child: Stack(
         children: [
           // Slides
@@ -193,6 +184,7 @@ class _AnimatedPromoPresentationState extends State<AnimatedPromoPresentation>
             ),
           ),
         ],
+      ),
       ),
     );
   }
