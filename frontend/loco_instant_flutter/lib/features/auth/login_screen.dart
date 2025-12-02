@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/animated_widgets.dart';
 import '../../widgets/animated_promo_presentation.dart';
+import '../../widgets/theme_version_selector.dart';
 import '../../providers/provider_state.dart' show UserRole, userRoleProvider, ProviderType, providerTypeProvider;
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -129,15 +130,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         width: double.infinity,
         height: double.infinity,
         decoration: const BoxDecoration(
-          // Gradient mai subtil, inspirat de Linear/Vercel
+          // Gradient original albastru-verde
           gradient: LinearGradient(
             colors: [
-              Color(0xFF0A0A0F),  // Negru aproape
-              Color(0xFF0D1117),  // Dark blue-gray
-              Color(0xFF161B22),  // GitHub dark
+              Color(0xFF1D4ED8),  // Albastru
+              Color(0xFF22C55E),  // Verde
             ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
         child: Stack(
@@ -153,6 +153,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ? _buildTabletLayout()
                       : _buildMobileLayout(),
             ),
+            
+            // Design Version Selector Button
+            const VersionSelectorButton(),
           ],
         ),
       ),
@@ -524,54 +527,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       child: Container(
         constraints: BoxConstraints(maxWidth: maxWidth),
         decoration: BoxDecoration(
-          // Glassmorphism effect
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.1),
-            width: 1,
-          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withOpacity(0.15),
               blurRadius: 40,
               offset: const Offset(0, 20),
             ),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ColorFilter.mode(
-              Colors.white.withOpacity(0.05),
-              BlendMode.overlay,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Header
-                    const Text(
-                      'Bine ai venit!',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Autentifică-te pentru a continua',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white.withOpacity(0.6),
-                      ),
-                    ),
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                const Text(
+                  'Bine ai venit!',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A1A2E),
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Autentifică-te pentru a continua',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
                     const SizedBox(height: 28),
                     
                     // Account Type Tabs
@@ -619,7 +610,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           'Ai uitat parola?',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Colors.white.withOpacity(0.6),
+                            color: Colors.grey.shade600,
                           ),
                         ),
                       ),
@@ -638,7 +629,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           'Nu ai cont? ',
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.white.withOpacity(0.6),
+                            color: Colors.grey.shade600,
                           ),
                         ),
                         GestureDetector(
@@ -654,9 +645,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
+              ],
             ),
           ),
         ),
@@ -671,9 +660,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return Container(
       height: 48,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.grey.shade100,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
       ),
       padding: const EdgeInsets.all(4),
       child: Row(
@@ -699,7 +687,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Icon(
                       Icons.person_outline,
                       size: 18,
-                      color: !_isProvider ? Colors.white : Colors.white.withOpacity(0.5),
+                      color: !_isProvider ? Colors.white : Colors.grey.shade500,
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -707,7 +695,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: !_isProvider ? Colors.white : Colors.white.withOpacity(0.5),
+                        color: !_isProvider ? Colors.white : Colors.grey.shade600,
                       ),
                     ),
                   ],
@@ -733,7 +721,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Icon(
                       Icons.handyman_outlined,
                       size: 18,
-                      color: _isProvider ? Colors.white : Colors.white.withOpacity(0.5),
+                      color: _isProvider ? Colors.white : Colors.grey.shade500,
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -741,7 +729,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: _isProvider ? Colors.white : Colors.white.withOpacity(0.5),
+                        color: _isProvider ? Colors.white : Colors.grey.shade600,
                       ),
                     ),
                   ],
@@ -770,7 +758,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.grey.shade700,
             ),
           ),
           const SizedBox(height: 8),
@@ -812,13 +800,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           color: isSelected 
-              ? const Color(0xFF2DD4BF).withOpacity(0.15)
-              : Colors.white.withOpacity(0.05),
+              ? const Color(0xFF2DD4BF).withOpacity(0.1)
+              : Colors.grey.shade100,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isSelected 
                 ? const Color(0xFF2DD4BF)
-                : Colors.white.withOpacity(0.1),
+                : Colors.grey.shade200,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -830,7 +818,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               size: 18,
               color: isSelected 
                   ? const Color(0xFF2DD4BF)
-                  : Colors.white.withOpacity(0.5),
+                  : Colors.grey.shade500,
             ),
             const SizedBox(width: 6),
             Text(
@@ -840,7 +828,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 fontWeight: FontWeight.w600,
                 color: isSelected 
                     ? const Color(0xFF2DD4BF)
-                    : Colors.white.withOpacity(0.5),
+                    : Colors.grey.shade600,
               ),
             ),
           ],
@@ -850,7 +838,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   // ══════════════════════════════════════════════════════════════
-  // TEXT FIELD - Dark theme
+  // TEXT FIELD - Light theme
   // ══════════════════════════════════════════════════════════════
   Widget _buildTextField({
     required TextEditingController controller,
@@ -871,7 +859,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: Colors.white.withOpacity(0.7),
+            color: Colors.grey.shade700,
           ),
         ),
         const SizedBox(height: 8),
@@ -885,19 +873,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           style: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w500,
-            color: Colors.white,
+            color: Color(0xFF1A1A2E),
           ),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(
-              color: Colors.white.withOpacity(0.3),
+              color: Colors.grey.shade400,
               fontWeight: FontWeight.w400,
             ),
             prefixIcon: Icon(
               icon,
               color: error != null 
                   ? Colors.red.shade400 
-                  : Colors.white.withOpacity(0.4),
+                  : Colors.grey.shade500,
               size: 20,
             ),
             suffixIcon: isPassword
@@ -905,13 +893,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     onTap: () => setState(() => _obscurePassword = !_obscurePassword),
                     child: Icon(
                       _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                      color: Colors.white.withOpacity(0.4),
+                      color: Colors.grey.shade500,
                       size: 20,
                     ),
                   )
                 : null,
             filled: true,
-            fillColor: Colors.white.withOpacity(0.05),
+            fillColor: Colors.grey.shade50,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -922,7 +910,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               borderSide: BorderSide(
                 color: error != null 
                     ? Colors.red.shade400 
-                    : Colors.white.withOpacity(0.1),
+                    : Colors.grey.shade200,
               ),
             ),
             focusedBorder: OutlineInputBorder(
