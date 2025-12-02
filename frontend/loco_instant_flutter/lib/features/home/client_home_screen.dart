@@ -818,7 +818,6 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
 
   // ==================== DESKTOP LAYOUT ====================
   Widget _buildDesktopLayout() {
-    final activeIndex = _clickedCategoryIndex ?? _hoveredCategoryIndex;
     
     return Stack(
       children: [
@@ -849,11 +848,11 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
           ),
         ),
         
-        // Subcategories overlay - rămâne deschis la click
-        if (activeIndex != null)
+        // Subcategories overlay - deschis pe hover (ca la eMAG)
+        if (_hoveredCategoryIndex != null)
           Positioned(
             left: 280,
-            top: 100 + (activeIndex * 52.0),
+            top: 100 + (_hoveredCategoryIndex! * 52.0),
             child: _buildSubmenuOverlay(),
           ),
           
@@ -977,16 +976,17 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
                         ),
                       ),
                     ),
-                    if (_clickedCategoryIndex != null)
-                      GestureDetector(
-                        onTap: () => setState(() => _clickedCategoryIndex = null),
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Icon(Icons.close, color: Colors.white, size: 18),
+                    // Indicator hover activ
+                    if (_hoveredCategoryIndex != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${_hoveredCategoryIndex! + 1}/${_categories.length}',
+                          style: const TextStyle(color: Colors.white70, fontSize: 12),
                         ),
                       ),
                   ],
@@ -1004,32 +1004,32 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
 
   Widget _buildCategoryItem(int index) {
     final category = _categories[index];
-    final isSelected = _clickedCategoryIndex == index;
     final isHovered = _hoveredCategoryIndex == index;
-    final isActive = isSelected || isHovered;
     final isUrgent = category['urgent'] == true;
 
     return MouseRegion(
-      onEnter: (_) => setState(() => _hoveredCategoryIndex = index),
+      onEnter: (_) {
+        // La hover, deschide submeniul instant (ca la eMAG)
+        setState(() => _hoveredCategoryIndex = index);
+      },
       onExit: (_) {
-        Future.delayed(const Duration(milliseconds: 100), () {
-          if (mounted && _clickedCategoryIndex != index) {
+        // Delay mic pentru a permite mutarea mouse-ului pe submeniu
+        Future.delayed(const Duration(milliseconds: 150), () {
+          if (mounted && _hoveredCategoryIndex == index && _hoveredSubcategoryIndex == null) {
             setState(() => _hoveredCategoryIndex = null);
           }
         });
       },
       child: GestureDetector(
         onTap: () {
-          setState(() {
-            // La click, păstrăm submeniul deschis
-            _clickedCategoryIndex = _clickedCategoryIndex == index ? null : index;
-            _hoveredCategoryIndex = _clickedCategoryIndex;
-          });
+          // La click pe categorie, caută prestatori din acea categorie
+          _searchController.text = category['name'];
+          _searchProvider();
         },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: isActive ? const Color(0xFFF0F9FF) : Colors.white,
+            color: isHovered ? const Color(0xFFF0F9FF) : Colors.white,
             border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
           ),
           child: Row(
@@ -1038,13 +1038,13 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: isActive ? const Color(0xFF2DD4BF) : Colors.grey.shade100,
+                  color: isHovered ? const Color(0xFF2DD4BF) : Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   category['icon'],
                   size: 20,
-                  color: isActive ? Colors.white : Colors.grey.shade600,
+                  color: isHovered ? Colors.white : Colors.grey.shade600,
                 ),
               ),
               const SizedBox(width: 12),
@@ -1056,7 +1056,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: isActive ? const Color(0xFF1565C0) : const Color(0xFF333333),
+                        color: isHovered ? const Color(0xFF1565C0) : const Color(0xFF333333),
                       ),
                     ),
                     if (isUrgent) ...[
@@ -1081,9 +1081,9 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
                 ),
               ),
               Icon(
-                isSelected ? Icons.expand_less : Icons.chevron_right,
-                size: 20,
-                color: isActive ? const Color(0xFF2DD4BF) : Colors.grey.shade400,
+                isHovered ? Icons.arrow_forward_ios : Icons.chevron_right,
+                size: isHovered ? 14 : 20,
+                color: isHovered ? const Color(0xFF2DD4BF) : Colors.grey.shade400,
               ),
             ],
           ),
@@ -1093,25 +1093,26 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
   }
 
   Widget _buildSubmenuOverlay() {
-    final activeIndex = _clickedCategoryIndex ?? _hoveredCategoryIndex;
-    if (activeIndex == null) return const SizedBox.shrink();
+    if (_hoveredCategoryIndex == null) return const SizedBox.shrink();
     
-    final category = _categories[activeIndex];
+    final category = _categories[_hoveredCategoryIndex!];
     final subcategories = category['subcategories'] as List<String>;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hoveredSubcategoryIndex = 0),
       onExit: (_) {
-        // Nu închidem submeniul dacă e selectat prin click
-        if (_clickedCategoryIndex == null) {
-          setState(() {
-            _hoveredSubcategoryIndex = null;
-            _hoveredCategoryIndex = null;
-          });
-        }
+        // La ieșire din submeniu, închidem totul
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) {
+            setState(() {
+              _hoveredSubcategoryIndex = null;
+              _hoveredCategoryIndex = null;
+            });
+          }
+        });
       },
       child: Container(
-        width: 280,
+        width: 300,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -1263,6 +1264,40 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
     );
   }
 
+  // Generează markeri pentru toți prestatorii
+  Set<Marker> _buildProviderMarkers() {
+    final markers = <Marker>{
+      // Markerul utilizatorului
+      Marker(
+        markerId: const MarkerId('user'),
+        position: _userLocation,
+        infoWindow: const InfoWindow(title: '📍 Tu ești aici'),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        zIndex: 2,
+      ),
+    };
+    
+    // Adaugă markeri pentru fiecare prestator
+    for (final provider in _allProviders) {
+      final lat = provider['lat'] as double;
+      final lng = provider['lng'] as double;
+      markers.add(
+        Marker(
+          markerId: MarkerId('provider_${provider['id']}'),
+          position: LatLng(lat, lng),
+          infoWindow: InfoWindow(
+            title: provider['name'] as String,
+            snippet: '⭐ ${provider['rating']} • ${provider['distance']} km',
+          ),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+          onTap: () => _initiateOrder(provider),
+        ),
+      );
+    }
+    
+    return markers;
+  }
+
   Widget _buildGoogleMap() {
     return Container(
       height: 280,
@@ -1287,14 +1322,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen> {
                 _mapController.complete(controller);
               }
             },
-            markers: {
-              Marker(
-                markerId: const MarkerId('user'),
-                position: _userLocation,
-                infoWindow: const InfoWindow(title: 'Tu ești aici'),
-                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-              ),
-            },
+            markers: _buildProviderMarkers(),
           ),
           
           Positioned(
