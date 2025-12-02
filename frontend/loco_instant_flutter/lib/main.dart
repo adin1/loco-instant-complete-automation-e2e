@@ -23,9 +23,13 @@ import 'features/settings/settings_screen.dart';
 import 'features/notifications/notifications_screen.dart';
 import 'features/provider/provider_dashboard_screen.dart';
 import 'features/provider/provider_services_screen.dart';
+import 'features/admin/page_variants_screen.dart';
 import 'providers/theme_provider.dart';
+import 'services/page_variant_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await PageVariantService().init();
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -132,6 +136,11 @@ final _router = GoRouter(
         GoRoute(
           path: 'notifications',
           builder: (context, state) => const NotificationsScreen(),
+        ),
+        // Admin route pentru Page Variants
+        GoRoute(
+          path: 'admin/variants',
+          builder: (context, state) => const PageVariantsScreen(),
         ),
       ],
     ),

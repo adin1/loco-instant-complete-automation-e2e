@@ -153,6 +153,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       : _buildMobileLayout(),
             ),
             
+            // Admin button - Page Variants
+            Positioned(
+              top: 16,
+              right: 16,
+              child: SafeArea(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => context.go('/admin/variants'),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.tune, color: Colors.white.withOpacity(0.8), size: 16),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Variante',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
