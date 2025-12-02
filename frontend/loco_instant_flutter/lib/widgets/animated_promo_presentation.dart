@@ -49,7 +49,7 @@ class _AnimatedPromoPresentationState extends State<AnimatedPromoPresentation>
         _Feature(Icons.verified_user, 'Prestatori verificați'),
         _Feature(Icons.lock, 'Plată sigură ESCROW'),
       ],
-      highlight: '💰 Banii sunt blocați până la finalizarea lucrării!',
+      highlight: 'Banii sunt blocați până la finalizarea lucrării!',
     ),
     // Slide 3: Beneficii Prestator
     _SlideData(
@@ -64,7 +64,7 @@ class _AnimatedPromoPresentationState extends State<AnimatedPromoPresentation>
         _Feature(Icons.payments, 'Plată garantată'),
         _Feature(Icons.star, 'Profil & recenzii'),
       ],
-      highlight: '🚀 Vizibilitate crescută în oraș!',
+      highlight: 'Vizibilitate crescută în oraș!',
     ),
     // Slide 4: ESCROW Security
     _SlideData(
@@ -77,7 +77,7 @@ class _AnimatedPromoPresentationState extends State<AnimatedPromoPresentation>
         _Feature(Icons.check_circle, 'Client protejat'),
         _Feature(Icons.check_circle, 'Prestator plătit garantat'),
       ],
-      highlight: '🛡️ Zero riscuri pentru ambele părți!',
+      highlight: 'Zero riscuri pentru ambele părți!',
     ),
   ];
 
