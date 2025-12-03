@@ -10,7 +10,6 @@ import '../../widgets/animated_promo_presentation.dart';
 import '../../providers/provider_state.dart' show UserRole, userRoleProvider, ProviderType, providerTypeProvider;
 import '../../providers/page_variant_provider.dart';
 import '../../models/page_variant.dart';
-import '../admin/page_variants_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -177,75 +176,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
             ),
             
-            // Admin button - Page Variants
-            Positioned(
-              top: 16,
-              right: 16,
-              child: SafeArea(
-                child: MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: GestureDetector(
-                    onTap: () async {
-                      await Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const PageVariantsScreen(),
-                        ),
-                      );
-                      // Refresh când ne întoarcem din admin
-                      if (mounted) {
-                        ref.invalidate(loginConfigProvider);
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.white.withOpacity(0.2)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.tune, color: Colors.white, size: 18),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'Variante',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            
-            // Indicator variantă activă (jos-stânga)
-            Positioned(
-              bottom: 16,
-              left: 16,
-              child: SafeArea(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    '${config.layout} • ${config.theme}',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.6),
-                      fontSize: 10,
-                      fontFamily: 'monospace',
-                    ),
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ),

@@ -15,10 +15,23 @@ let AuthService = class AuthService {
     constructor() {
         this.prisma = new client_1.PrismaClient();
         this.demoUsers = [
-            { id: 1, email: 'client@test.ro', name: 'Client Demo', role: 'customer' },
-            { id: 2, email: 'prestator@test.ro', name: 'Prestator Demo', role: 'provider' },
-            { id: 3, email: 'admin@test.ro', name: 'Admin Demo', role: 'admin' },
-            { id: 4, email: 'adinatraica@gmail.com', name: 'Adina Traica', role: 'customer' },
+            { id: 1, email: 'client@test.ro', name: 'Ion Popescu', role: 'customer' },
+            { id: 2, email: 'maria@test.ro', name: 'Maria Ionescu', role: 'customer' },
+            { id: 3, email: 'alex@test.ro', name: 'Alexandru Radu', role: 'customer' },
+            { id: 4, email: 'elena@test.ro', name: 'Elena Munteanu', role: 'customer' },
+            { id: 5, email: 'adinatraica@gmail.com', name: 'Adina Traica', role: 'customer' },
+            { id: 10, email: 'instalator1@test.ro', name: 'Vasile Mureșan', role: 'provider' },
+            { id: 11, email: 'instalator2@test.ro', name: 'Florin Popa', role: 'provider' },
+            { id: 12, email: 'electrician1@test.ro', name: 'Mihai Electricul', role: 'provider' },
+            { id: 13, email: 'electrician2@test.ro', name: 'Dan Volt', role: 'provider' },
+            { id: 14, email: 'curatenie1@test.ro', name: 'Maria Clean', role: 'provider' },
+            { id: 15, email: 'curatenie2@test.ro', name: 'Ana Curățel', role: 'provider' },
+            { id: 16, email: 'lacatus1@test.ro', name: 'Andrei Lăcătușul', role: 'provider' },
+            { id: 17, email: 'transport1@test.ro', name: 'George Transport', role: 'provider' },
+            { id: 18, email: 'zugrav1@test.ro', name: 'Dan Zugravu', role: 'provider' },
+            { id: 19, email: 'it1@test.ro', name: 'Radu TechFix', role: 'provider' },
+            { id: 20, email: 'prestator@test.ro', name: 'Prestator Demo', role: 'provider' },
+            { id: 100, email: 'admin@test.ro', name: 'Admin LOCO', role: 'admin' },
         ];
     }
     async register(email, password, name) {
