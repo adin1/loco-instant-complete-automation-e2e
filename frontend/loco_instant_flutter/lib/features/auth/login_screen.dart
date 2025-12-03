@@ -333,7 +333,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             // Prezentare (dacă e activată)
             if (showPresentation) ...[
               SizedBox(
-                width: 500,
+                width: 420,
                 child: AnimatedPromoPresentation(height: presentationHeight),
               ),
               const SizedBox(height: 24),
@@ -507,7 +507,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 600),
-                child: const AnimatedPromoPresentation(height: 240),
+                child: const AnimatedPromoPresentation(height: 320),
               ),
             ),
             const SizedBox(height: 40),
@@ -533,7 +533,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             _buildCompactHeader(),
             const SizedBox(height: 24),
             // Presentation
-            const AnimatedPromoPresentation(height: 200),
+            const AnimatedPromoPresentation(height: 280),
             const SizedBox(height: 32),
             // Login Card
             _buildLoginCard(maxWidth: double.infinity),
@@ -551,7 +551,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     required double maxWidth, 
     required double maxHeight,
     bool showPresentation = true,
-    double presentationHeight = 220,
+    double presentationHeight = 320,
   }) {
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: maxWidth, maxHeight: maxHeight),
@@ -609,10 +609,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             
             // Animated Presentation - controlat de config
             if (showPresentation) ...[
-              SlideInWidget(
-                delay: const Duration(milliseconds: 300),
-                duration: const Duration(milliseconds: 700),
-                child: AnimatedPromoPresentation(height: presentationHeight),
+              Center(
+                child: SlideInWidget(
+                  delay: const Duration(milliseconds: 300),
+                  duration: const Duration(milliseconds: 700),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 480),
+                    child: AnimatedPromoPresentation(height: presentationHeight),
+                  ),
+                ),
               ),
               const SizedBox(height: 20),
             ],

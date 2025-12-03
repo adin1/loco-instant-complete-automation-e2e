@@ -19,6 +19,7 @@ export declare class AuthService {
         tenant_id: bigint;
     }>;
     private serializeUser;
+    private demoUsers;
     login(email: string, password: string): Promise<{
         access_token: string;
         user: {

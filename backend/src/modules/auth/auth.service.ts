@@ -69,6 +69,14 @@ export class AuthService {
     };
   }
 
+  // Demo users pentru când nu există bază de date
+  private demoUsers = [
+    { id: 1, email: 'client@test.ro', name: 'Client Demo', role: 'customer' },
+    { id: 2, email: 'prestator@test.ro', name: 'Prestator Demo', role: 'provider' },
+    { id: 3, email: 'admin@test.ro', name: 'Admin Demo', role: 'admin' },
+    { id: 4, email: 'adinatraica@gmail.com', name: 'Adina Traica', role: 'customer' },
+  ];
+
   // Login + generare token JWT
   async login(email: string, password: string) {
     try {
@@ -88,15 +96,15 @@ export class AuthService {
         user: this.serializeUser(user),
       };
     } catch (error) {
-      // În development, permite login doar cu verificarea existenței utilizatorului
+      // În development/demo mode, permite login cu utilizatori demo
       if (process.env.NODE_ENV !== 'production') {
-        const user = await this.prisma.user.findUnique({ where: { email } });
+        // Verifică dacă e un utilizator demo
+        const demoUser = this.demoUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
         
-        if (user) {
-          console.log(`[DEV MODE] Login fallback for: ${email}`);
-          const userId = Number(user.id);
+        if (demoUser) {
+          console.log(`[DEMO MODE] Login for demo user: ${email}`);
           
-          const payload = { sub: userId, email: user.email };
+          const payload = { sub: demoUser.id, email: demoUser.email };
           const token = jwt.sign(
             payload,
             process.env.JWT_SECRET || 'local_secret_key',
@@ -105,8 +113,32 @@ export class AuthService {
 
           return {
             access_token: token,
-            user: this.serializeUser(user),
+            user: demoUser,
           };
+        }
+
+        // Fallback: încearcă să găsească în baza de date (dacă e disponibilă)
+        try {
+          const user = await this.prisma.user.findUnique({ where: { email } });
+          
+          if (user) {
+            console.log(`[DEV MODE] Login fallback for: ${email}`);
+            const userId = Number(user.id);
+            
+            const payload = { sub: userId, email: user.email };
+            const token = jwt.sign(
+              payload,
+              process.env.JWT_SECRET || 'local_secret_key',
+              { expiresIn: '7d' },
+            );
+
+            return {
+              access_token: token,
+              user: this.serializeUser(user),
+            };
+          }
+        } catch (dbError) {
+          console.log('[DEV MODE] Database not available, using demo mode only');
         }
       }
 

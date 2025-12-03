@@ -14,6 +14,12 @@ const jwt = require("jsonwebtoken");
 let AuthService = class AuthService {
     constructor() {
         this.prisma = new client_1.PrismaClient();
+        this.demoUsers = [
+            { id: 1, email: 'client@test.ro', name: 'Client Demo', role: 'customer' },
+            { id: 2, email: 'prestator@test.ro', name: 'Prestator Demo', role: 'provider' },
+            { id: 3, email: 'admin@test.ro', name: 'Admin Demo', role: 'admin' },
+            { id: 4, email: 'adinatraica@gmail.com', name: 'Adina Traica', role: 'customer' },
+        ];
     }
     async register(email, password, name) {
         const existing = await this.prisma.user.findUnique({ where: { email } });
@@ -77,16 +83,31 @@ let AuthService = class AuthService {
         }
         catch (error) {
             if (process.env.NODE_ENV !== 'production') {
-                const user = await this.prisma.user.findUnique({ where: { email } });
-                if (user) {
-                    console.log(`[DEV MODE] Login fallback for: ${email}`);
-                    const userId = Number(user.id);
-                    const payload = { sub: userId, email: user.email };
+                const demoUser = this.demoUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+                if (demoUser) {
+                    console.log(`[DEMO MODE] Login for demo user: ${email}`);
+                    const payload = { sub: demoUser.id, email: demoUser.email };
                     const token = jwt.sign(payload, process.env.JWT_SECRET || 'local_secret_key', { expiresIn: '7d' });
                     return {
                         access_token: token,
-                        user: this.serializeUser(user),
+                        user: demoUser,
                     };
+                }
+                try {
+                    const user = await this.prisma.user.findUnique({ where: { email } });
+                    if (user) {
+                        console.log(`[DEV MODE] Login fallback for: ${email}`);
+                        const userId = Number(user.id);
+                        const payload = { sub: userId, email: user.email };
+                        const token = jwt.sign(payload, process.env.JWT_SECRET || 'local_secret_key', { expiresIn: '7d' });
+                        return {
+                            access_token: token,
+                            user: this.serializeUser(user),
+                        };
+                    }
+                }
+                catch (dbError) {
+                    console.log('[DEV MODE] Database not available, using demo mode only');
                 }
             }
             if (error instanceof common_1.UnauthorizedException) {
