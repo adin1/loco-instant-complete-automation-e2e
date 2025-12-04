@@ -277,16 +277,18 @@ class _AnimatedPromoPresentationState extends State<AnimatedPromoPresentation>
               ),
             
             // Content - responsive padding - TEXT CENTRAT
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: isCompact ? 35 : 50, 
-                vertical: isCompact ? 8 : 24,
-              ),
-              child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center, // Centrare pe orizontală
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
+            Positioned.fill(
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isCompact ? 35 : 50, 
+                    vertical: isCompact ? 8 : 24,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center, // Centrare pe orizontală
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                   // Icon cu efect de glow
                   Container(
                     width: isCompact ? 36 : 64,
@@ -418,42 +420,44 @@ class _AnimatedPromoPresentationState extends State<AnimatedPromoPresentation>
                     )),
                   ],
                   
-                  // Highlight - only on larger sizes
-                  if (slide.highlight != null && !isCompact) ...[
-                    const SizedBox(height: 18),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.white.withOpacity(0.3),
-                            Colors.white.withOpacity(0.15),
+                    // Highlight - only on larger sizes
+                    if (slide.highlight != null && !isCompact) ...[
+                      const SizedBox(height: 18),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.white.withOpacity(0.3),
+                              Colors.white.withOpacity(0.15),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(30),
+                          border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+                        child: Text(
+                          slide.highlight!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
                           ),
-                        ],
-                      ),
-                      child: Text(
-                        slide.highlight!,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
                       ),
-                    ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
+          ),
           ],
         ),
       ),
