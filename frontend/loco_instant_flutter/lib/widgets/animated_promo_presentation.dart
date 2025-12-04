@@ -276,7 +276,7 @@ class _AnimatedPromoPresentationState extends State<AnimatedPromoPresentation>
                 ),
               ),
             
-            // Content - responsive padding
+            // Content - responsive padding - TEXT CENTRAT
             Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: isCompact ? 35 : 50, 
@@ -284,6 +284,7 @@ class _AnimatedPromoPresentationState extends State<AnimatedPromoPresentation>
               ),
               child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center, // Centrare pe orizontală
                   mainAxisSize: MainAxisSize.min,
                   children: [
                   // Icon cu efect de glow
@@ -373,34 +374,35 @@ class _AnimatedPromoPresentationState extends State<AnimatedPromoPresentation>
                     ),
                   ],
                   
-                  // Features - responsive (show only 1 in compact mode)
+                  // Features - responsive (show only 1 in compact mode) - CENTRAT
                   if (slide.features.isNotEmpty) ...[
                     SizedBox(height: isCompact ? 6 : 18),
-                    ...slide.features.take(isCompact ? 1 : 4).map((feature) => Padding(
-                      padding: EdgeInsets.symmetric(vertical: isCompact ? 1 : 5),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: isCompact ? 6 : 12, 
-                          vertical: isCompact ? 3 : 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: EdgeInsets.all(isCompact ? 2 : 5),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(6),
+                    ...slide.features.take(isCompact ? 1 : 4).map((feature) => Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: isCompact ? 1 : 5),
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isCompact ? 6 : 12, 
+                            vertical: isCompact ? 3 : 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(isCompact ? 2 : 5),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Icon(feature.icon, color: Colors.white, size: isCompact ? 10 : 16),
                               ),
-                              child: Icon(feature.icon, color: Colors.white, size: isCompact ? 10 : 16),
-                            ),
-                            SizedBox(width: isCompact ? 4 : 10),
-                            Flexible(
-                              child: Text(
+                              SizedBox(width: isCompact ? 4 : 10),
+                              Text(
                                 feature.text,
                                 style: TextStyle(
                                   color: Colors.white,
@@ -409,8 +411,8 @@ class _AnimatedPromoPresentationState extends State<AnimatedPromoPresentation>
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     )),

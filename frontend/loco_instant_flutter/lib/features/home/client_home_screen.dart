@@ -1366,11 +1366,19 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen>
             child: TextField(
               controller: _searchController,
               focusNode: _searchFocusNode,
-              style: const TextStyle(color: Colors.black, fontSize: 15, fontWeight: FontWeight.w500),
-              decoration: const InputDecoration(
+              cursorColor: Colors.black,
+              style: const TextStyle(
+                color: Colors.black, 
+                fontSize: 15, 
+                fontWeight: FontWeight.w600,
+                decoration: TextDecoration.none,
+              ),
+              decoration: InputDecoration(
                 hintText: 'Ce serviciu cauți? (ex: electrician, instalator...)',
-                hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+                hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
                 border: InputBorder.none,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
               ),
               onSubmitted: (_) => _searchProvider(),
             ),
