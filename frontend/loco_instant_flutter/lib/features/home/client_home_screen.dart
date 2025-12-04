@@ -146,6 +146,8 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen>
   ];
   
   int? _clickedCategoryIndex; // Pentru a ține submeniul deschis la click
+  String? _filteredCategory; // Categoria selectată pentru filtrare prestatori
+  bool _showUserLocationOnMap = false; // Arată locația utilizatorului pe hartă
 
   // Prestatori cu coordonate pentru distanță - organizați pe categorii
   final List<Map<String, dynamic>> _allProviders = [
@@ -362,14 +364,24 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen>
     {'name': 'Zacuscă de casă', 'description': 'Rețetă tradițională, 500g', 'price': '30 RON', 'image': 'https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=100&h=100&fit=crop'},
   ];
 
-  // Afișează doar 3 prestatori pe pagină
-  List<Map<String, dynamic>> get _currentProviders {
-    final start = _currentProviderPage * 3;
-    final end = (start + 3).clamp(0, _allProviders.length);
-    return _allProviders.sublist(start, end);
+  // Prestatori filtrați după categorie
+  List<Map<String, dynamic>> get _filteredProviders {
+    if (_filteredCategory == null || _filteredCategory!.isEmpty) {
+      return _allProviders;
+    }
+    return _allProviders.where((p) => p['category'] == _filteredCategory).toList();
   }
 
-  int get _totalPages => (_allProviders.length / 3).ceil();
+  // Afișează doar 3 prestatori pe pagină
+  List<Map<String, dynamic>> get _currentProviders {
+    final providers = _filteredProviders;
+    final start = _currentProviderPage * 3;
+    final end = (start + 3).clamp(0, providers.length);
+    if (start >= providers.length) return [];
+    return providers.sublist(start, end);
+  }
+
+  int get _totalPages => (_filteredProviders.length / 3).ceil().clamp(1, 999);
 
   @override
   void initState() {
@@ -495,6 +507,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen>
         _currentLocationText = 'Locația mea (${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)})';
         _searchController.text = '📍 Locația mea actuală';
         _showLocationSuggestions = false;
+        _showUserLocationOnMap = true; // Activează afișarea pe hartă
       });
 
       // Mută harta la noua locație
@@ -1353,7 +1366,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen>
             child: TextField(
               controller: _searchController,
               focusNode: _searchFocusNode,
-              style: const TextStyle(color: Color(0xFF1E293B), fontSize: 15),
+              style: const TextStyle(color: Colors.black, fontSize: 15, fontWeight: FontWeight.w500),
               decoration: const InputDecoration(
                 hintText: 'Ce serviciu cauți? (ex: electrician, instalator...)',
                 hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
@@ -2175,18 +2188,21 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen>
                   children: [
                     Row(
                       children: [
-                        Text(
-                          category['name'],
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: isHovered ? categoryColor : const Color(0xFF1E293B),
+                        Flexible(
+                          child: Text(
+                            category['name'],
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: isHovered ? categoryColor : const Color(0xFF1E293B),
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         if (isUrgent) ...[
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
                                 colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
@@ -2196,12 +2212,12 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen>
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.flash_on, size: 10, color: Colors.white),
+                                Icon(Icons.flash_on, size: 9, color: Colors.white),
                                 SizedBox(width: 2),
                                 Text(
                                   '24/7',
                                   style: TextStyle(
-                                    fontSize: 9,
+                                    fontSize: 8,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
                                   ),
@@ -2247,24 +2263,69 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen>
   
   // Filtrează prestatorii după categorie
   void _filterProvidersByCategory(String category) {
-    final filtered = _allProviders.where((p) => p['category'] == category).toList();
-    
     setState(() {
+      // Dacă apasă pe aceeași categorie, dezactivează filtrul
+      if (_filteredCategory == category) {
+        _filteredCategory = null;
+      } else {
+        _filteredCategory = category;
+      }
       _currentProviderPage = 0;
     });
+    
+    final filtered = _filteredProviders;
+    final categoryEmoji = _categories.firstWhere(
+      (c) => c['name'] == category, 
+      orElse: () => {'emoji': '📋'}
+    )['emoji'];
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle, color: Colors.white),
-            const SizedBox(width: 8),
-            Text('${filtered.length} prestatori găsiți în "$category"'),
+            Text(categoryEmoji, style: const TextStyle(fontSize: 20)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                _filteredCategory == null 
+                  ? 'Se afișează toți prestatorii (${_allProviders.length})'
+                  : '${filtered.length} prestatori în "$category"',
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+            ),
+            if (_filteredCategory != null)
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _filteredCategory = null;
+                    _currentProviderPage = 0;
+                  });
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.close, color: Colors.white, size: 14),
+                      SizedBox(width: 4),
+                      Text('Resetează', style: TextStyle(color: Colors.white, fontSize: 12)),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ),
-        backgroundColor: const Color(0xFF2DD4BF),
+        backgroundColor: _filteredCategory != null 
+          ? (_categories.firstWhere((c) => c['name'] == category, orElse: () => {'color': const Color(0xFF2DD4BF)})['color'] as Color)
+          : const Color(0xFF64748B),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
@@ -2443,30 +2504,54 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen>
 
   // Generează markeri pentru toți prestatorii
   Set<Marker> _buildProviderMarkers() {
-    final markers = <Marker>{
-      // Markerul utilizatorului
-      Marker(
-        markerId: const MarkerId('user'),
-        position: _userLocation,
-        infoWindow: const InfoWindow(title: '📍 Tu ești aici'),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-        zIndex: 2,
-      ),
-    };
+    final markers = <Marker>{};
     
-    // Adaugă markeri pentru fiecare prestator
-    for (final provider in _allProviders) {
+    // Markerul utilizatorului - culoare ALBASTRĂ distinctă (doar dacă e activat)
+    if (_showUserLocationOnMap) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('user'),
+          position: _userLocation,
+          infoWindow: const InfoWindow(title: '📍 Tu ești aici', snippet: 'Locația ta curentă'),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+          zIndex: 10, // Mai sus decât prestatorii
+        ),
+      );
+    }
+    
+    // Adaugă markeri pentru prestatorii filtrați - culoare PORTOCALIE distinctă
+    final providersToShow = _filteredProviders;
+    for (final provider in providersToShow) {
       final lat = provider['lat'] as double;
       final lng = provider['lng'] as double;
+      final categoryColor = provider['categoryColor'] as Color?;
+      
+      // Calculează hue-ul bazat pe culoarea categoriei
+      double markerHue = BitmapDescriptor.hueOrange;
+      if (categoryColor != null) {
+        // Mapează culorile categoriilor la hue-uri diferite
+        if (categoryColor == const Color(0xFF3B82F6)) markerHue = BitmapDescriptor.hueCyan; // Instalator
+        else if (categoryColor == const Color(0xFFF59E0B)) markerHue = BitmapDescriptor.hueYellow; // Electrician
+        else if (categoryColor == const Color(0xFFEF4444)) markerHue = BitmapDescriptor.hueRed; // Lăcătuș
+        else if (categoryColor == const Color(0xFF8B5CF6)) markerHue = BitmapDescriptor.hueViolet; // Transport
+        else if (categoryColor == const Color(0xFF10B981)) markerHue = BitmapDescriptor.hueGreen; // Curățenie
+        else if (categoryColor == const Color(0xFF6366F1)) markerHue = BitmapDescriptor.hueMagenta; // Reparații
+        else if (categoryColor == const Color(0xFF06B6D4)) markerHue = BitmapDescriptor.hueAzure; // AC
+        else if (categoryColor == const Color(0xFFEC4899)) markerHue = BitmapDescriptor.hueRose; // Zugrăveli
+        else if (categoryColor == const Color(0xFF14B8A6)) markerHue = BitmapDescriptor.hueCyan; // IT
+        else markerHue = BitmapDescriptor.hueOrange;
+      }
+      
       markers.add(
         Marker(
           markerId: MarkerId('provider_${provider['id']}'),
           position: LatLng(lat, lng),
           infoWindow: InfoWindow(
-            title: provider['name'] as String,
-            snippet: '⭐ ${provider['rating']} • ${provider['distance']} km',
+            title: '${provider['name']}',
+            snippet: '${provider['category']} • ⭐ ${provider['rating']} • ${provider['distance']} km',
           ),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+          icon: BitmapDescriptor.defaultMarkerWithHue(markerHue),
+          zIndex: 1,
           onTap: () => _initiateOrder(provider),
         ),
       );
@@ -2584,8 +2669,85 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen>
 
   // ==================== PROVIDERS SECTION - 3 per pagină ====================
   Widget _buildProvidersSection() {
+    final categoryData = _filteredCategory != null 
+      ? _categories.firstWhere((c) => c['name'] == _filteredCategory, orElse: () => {})
+      : null;
+    final categoryColor = categoryData?['color'] as Color? ?? const Color(0xFF2DD4BF);
+    
     return Column(
       children: [
+        // Header cu filtru activ
+        Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: categoryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  _filteredCategory != null ? (categoryData?['icon'] as IconData? ?? Icons.work) : Icons.people,
+                  color: categoryColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _filteredCategory ?? 'Toți prestatorii',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: categoryColor,
+                      ),
+                    ),
+                    Text(
+                      '${_filteredProviders.length} prestatori disponibili',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                  ],
+                ),
+              ),
+              if (_filteredCategory != null)
+                GestureDetector(
+                  onTap: () => setState(() {
+                    _filteredCategory = null;
+                    _currentProviderPage = 0;
+                  }),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.close, size: 16, color: Colors.grey.shade600),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Resetează',
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade700, fontWeight: FontWeight.w500),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        
         Row(
           children: [
             _buildNavigationArrow(Icons.chevron_left, _prevProviderPage),
@@ -2593,18 +2755,39 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen>
             
             // 3 Prestatori pe rând
             Expanded(
-              child: Row(
-                children: [
-                  if (_currentProviders.isNotEmpty)
-                    Expanded(child: _buildProviderCard(_currentProviders[0])),
-                  const SizedBox(width: 16),
-                  if (_currentProviders.length > 1)
-                    Expanded(child: _buildProviderCard(_currentProviders[1])),
-                  const SizedBox(width: 16),
-                  if (_currentProviders.length > 2)
-                    Expanded(child: _buildProviderCard(_currentProviders[2])),
-                ],
-              ),
+              child: _currentProviders.isEmpty
+                ? Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.search_off, size: 48, color: Colors.grey.shade300),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Nu sunt prestatori în această categorie',
+                            style: TextStyle(color: Colors.grey.shade500),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : Row(
+                    children: [
+                      if (_currentProviders.isNotEmpty)
+                        Expanded(child: _buildProviderCard(_currentProviders[0])),
+                      const SizedBox(width: 16),
+                      if (_currentProviders.length > 1)
+                        Expanded(child: _buildProviderCard(_currentProviders[1])),
+                      const SizedBox(width: 16),
+                      if (_currentProviders.length > 2)
+                        Expanded(child: _buildProviderCard(_currentProviders[2])),
+                    ],
+                  ),
             ),
             const SizedBox(width: 12),
             
@@ -2625,7 +2808,7 @@ class _ClientHomeScreenState extends ConsumerState<ClientHomeScreen>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: _currentProviderPage == index 
-                      ? const Color(0xFF2DD4BF) 
+                      ? categoryColor 
                       : Colors.grey.shade300,
                 ),
               ),
