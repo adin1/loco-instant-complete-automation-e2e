@@ -2,29 +2,37 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const core_1 = require("@nestjs/core");
 const app_module_1 = require("./app.module");
-const swagger_1 = require("@nestjs/swagger");
 const dotenv = require("dotenv");
 const common_1 = require("@nestjs/common");
+const platform_express_1 = require("@nestjs/platform-express");
+const express = require("express");
+const http = require("http");
 dotenv.config();
 async function bootstrap() {
-    const app = await core_1.NestFactory.create(app_module_1.AppModule, { cors: true });
+    const port = Number(process.env.PORT) || 3000;
+    const expressApp = express();
+    const server = http.createServer(expressApp);
+    await new Promise((resolve, reject) => {
+        server.listen(port, '127.0.0.1', () => {
+            console.log(`HTTP server listening on http://127.0.0.1:${port}`);
+            resolve();
+        });
+        server.on('error', reject);
+    });
+    console.log('Creating NestFactory...');
+    const app = await core_1.NestFactory.create(app_module_1.AppModule, new platform_express_1.ExpressAdapter(expressApp), { cors: true });
+    console.log('NestFactory created');
     app.useGlobalPipes(new common_1.ValidationPipe({
         whitelist: true,
         forbidNonWhitelisted: true,
         transform: true,
         transformOptions: { enableImplicitConversion: true },
     }));
-    const config = new swagger_1.DocumentBuilder()
-        .setTitle('Loco Instant API')
-        .setDescription('REST API for marketplace (multi-tenant)')
-        .setVersion('0.1.0')
-        .addBearerAuth()
-        .build();
-    const document = swagger_1.SwaggerModule.createDocument(app, config);
-    swagger_1.SwaggerModule.setup('api/docs', app, document);
-    const port = process.env.PORT || 3000;
-    await app.listen(port);
-    console.log(`API listening on http://localhost:${port}`);
+    await app.init();
+    console.log(`API ready on http://localhost:${port}`);
 }
-bootstrap();
+bootstrap().catch(err => {
+    console.error('Bootstrap error:', err);
+    process.exit(1);
+});
 //# sourceMappingURL=main.js.map

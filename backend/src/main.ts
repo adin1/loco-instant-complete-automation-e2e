@@ -3,10 +3,34 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as dotenv from 'dotenv';
 import { ValidationPipe } from '@nestjs/common';
+import { ExpressAdapter } from '@nestjs/platform-express';
+import * as express from 'express';
+import * as http from 'http';
 dotenv.config();
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { cors: true });
+  const port = Number(process.env.PORT) || 3000;
+  
+  // Create Express app and HTTP server manually
+  const expressApp = express();
+  const server = http.createServer(expressApp);
+  
+  // Start listening BEFORE NestJS initialization
+  await new Promise<void>((resolve, reject) => {
+    server.listen(port, '127.0.0.1', () => {
+      console.log(`HTTP server listening on http://127.0.0.1:${port}`);
+      resolve();
+    });
+    server.on('error', reject);
+  });
+
+  console.log('Creating NestFactory...');
+  const app = await NestFactory.create(
+    AppModule,
+    new ExpressAdapter(expressApp),
+    { cors: true }
+  );
+  console.log('NestFactory created');
 
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
@@ -15,17 +39,11 @@ async function bootstrap() {
     transformOptions: { enableImplicitConversion: true },
   }));
 
-  const config = new DocumentBuilder()
-    .setTitle('Loco Instant API')
-    .setDescription('REST API for marketplace (multi-tenant)')
-    .setVersion('0.1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
-
-  const port = process.env.PORT || 3000;
-  await app.listen(port as number);
-  console.log(`API listening on http://localhost:${port}`);
+  await app.init();
+  console.log(`API ready on http://localhost:${port}`);
 }
-bootstrap();
+
+bootstrap().catch(err => {
+  console.error('Bootstrap error:', err);
+  process.exit(1);
+});
