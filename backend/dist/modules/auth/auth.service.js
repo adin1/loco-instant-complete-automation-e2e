@@ -20,6 +20,7 @@ let AuthService = class AuthService {
             { id: 3, email: 'alex@test.ro', name: 'Alexandru Radu', role: 'customer' },
             { id: 4, email: 'elena@test.ro', name: 'Elena Munteanu', role: 'customer' },
             { id: 5, email: 'adinatraica@gmail.com', name: 'Adina Traica', role: 'customer' },
+            { id: 6, email: 'mihadina@yahoo.com', name: 'Mihadina', role: 'provider' },
             { id: 10, email: 'instalator1@test.ro', name: 'Vasile Mureșan', role: 'provider' },
             { id: 11, email: 'instalator2@test.ro', name: 'Florin Popa', role: 'provider' },
             { id: 12, email: 'electrician1@test.ro', name: 'Mihai Electricul', role: 'provider' },
@@ -95,33 +96,31 @@ let AuthService = class AuthService {
             };
         }
         catch (error) {
-            if (process.env.NODE_ENV !== 'production') {
-                const demoUser = this.demoUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-                if (demoUser) {
-                    console.log(`[DEMO MODE] Login for demo user: ${email}`);
-                    const payload = { sub: demoUser.id, email: demoUser.email };
+            const demoUser = this.demoUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+            if (demoUser) {
+                console.log(`[DEMO MODE] Login for demo user: ${email}`);
+                const payload = { sub: demoUser.id, email: demoUser.email };
+                const token = jwt.sign(payload, process.env.JWT_SECRET || 'local_secret_key', { expiresIn: '7d' });
+                return {
+                    access_token: token,
+                    user: demoUser,
+                };
+            }
+            try {
+                const user = await this.prisma.user.findUnique({ where: { email } });
+                if (user) {
+                    console.log(`[FALLBACK] Login for: ${email}`);
+                    const userId = Number(user.id);
+                    const payload = { sub: userId, email: user.email };
                     const token = jwt.sign(payload, process.env.JWT_SECRET || 'local_secret_key', { expiresIn: '7d' });
                     return {
                         access_token: token,
-                        user: demoUser,
+                        user: this.serializeUser(user),
                     };
                 }
-                try {
-                    const user = await this.prisma.user.findUnique({ where: { email } });
-                    if (user) {
-                        console.log(`[DEV MODE] Login fallback for: ${email}`);
-                        const userId = Number(user.id);
-                        const payload = { sub: userId, email: user.email };
-                        const token = jwt.sign(payload, process.env.JWT_SECRET || 'local_secret_key', { expiresIn: '7d' });
-                        return {
-                            access_token: token,
-                            user: this.serializeUser(user),
-                        };
-                    }
-                }
-                catch (dbError) {
-                    console.log('[DEV MODE] Database not available, using demo mode only');
-                }
+            }
+            catch (dbError) {
+                console.log('[FALLBACK] Database not available');
             }
             if (error instanceof common_1.UnauthorizedException) {
                 throw error;
